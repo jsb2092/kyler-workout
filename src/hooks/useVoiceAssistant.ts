@@ -77,10 +77,21 @@ const DAY_KEYWORDS: Record<string, DayName> = {
   'sunday': 'sunday',
 };
 
+export interface DebugInfo {
+  command: string;
+  foundOrdinal: boolean;
+  exerciseIndex: number;
+  isExerciseQuestion: boolean;
+  selectedDay: string | null;
+  exerciseCount: number;
+  result: string;
+}
+
 export function useVoiceAssistant(actions: VoiceActions) {
   const [isListening, setIsListening] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
   const [lastCommand, setLastCommand] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
 
@@ -180,8 +191,21 @@ export function useVoiceAssistant(actions: VoiceActions) {
                                command.includes('my last') ||
                                command.includes('my next');
 
+    // Set debug info
+    const debug: DebugInfo = {
+      command,
+      foundOrdinal,
+      exerciseIndex,
+      isExerciseQuestion,
+      selectedDay: actions.selectedDay,
+      exerciseCount: realExercises.length,
+      result: 'not matched yet',
+    };
+
     if (foundOrdinal && isExerciseQuestion) {
       if (!actions.selectedDay) {
+        debug.result = 'no day selected';
+        setDebugInfo(debug);
         speak("Please select a workout day first, then I can tell you about your exercises.");
         return true;
       }
@@ -201,14 +225,21 @@ export function useVoiceAssistant(actions: VoiceActions) {
           if (isLast) {
             response += " This is your last exercise on the list!";
           }
+          debug.result = `success: ${exercise.name}`;
+          setDebugInfo(debug);
           speak(response);
           return true;
         }
       } else if (exerciseIndex >= realExercises.length) {
+        debug.result = `index ${exerciseIndex} out of range`;
+        setDebugInfo(debug);
         speak(`You only have ${realExercises.length} exercises today.`);
         return true;
       }
     }
+
+    // Update debug for non-exercise commands
+    setDebugInfo(debug);
 
     // How many exercises question
     if (command.includes('how many') && command.includes('exercise')) {
@@ -394,6 +425,7 @@ export function useVoiceAssistant(actions: VoiceActions) {
     isListening,
     isSupported,
     lastCommand,
+    debugInfo,
     startListening,
     stopListening,
     toggleListening,
