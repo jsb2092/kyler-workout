@@ -85,7 +85,9 @@ export function useTimer() {
 
   const hasTimedSets = (exercise: Exercise): boolean => {
     const str = exercise.sets || exercise.duration || '';
-    return str.includes('sec') && !exercise.isWarmup && !exercise.isCooldown && !exercise.isStretch;
+    const hasTime = str.includes('sec') || str.includes('min');
+    // Include stretches, but exclude warmup/cooldown (they have their own timer buttons)
+    return hasTime && !exercise.isWarmup && !exercise.isCooldown;
   };
 
   const isComplete = timerData && currentExerciseIndex === timerData.exercises.length - 1 && timeRemaining === 0;
