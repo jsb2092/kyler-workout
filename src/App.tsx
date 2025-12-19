@@ -82,6 +82,9 @@ export default function App() {
     }
   }, [selectedDay, startTimer]);
 
+  // Get current day's exercises for voice assistant
+  const currentExercises = selectedDay ? workoutData[selectedDay].exercises : [];
+
   const { isListening, isSupported, lastCommand, toggleListening } = useVoiceAssistant({
     onSelectDay: handleSelectDay,
     onBack: handleBack,
@@ -95,6 +98,7 @@ export default function App() {
     timerActive,
     isPaused,
     completedToday,
+    exercises: currentExercises,
   });
 
   if (!isReady) {
