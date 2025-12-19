@@ -122,21 +122,24 @@ export function useVoiceAssistant(actions: VoiceActions) {
     synthRef.current.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 1.0;
+    utterance.rate = 0.9;
     utterance.pitch = 1.0;
     utterance.volume = 1.0;
+    utterance.lang = 'en-US';
 
     // iOS fix: need to use a voice explicitly
     const voices = synthRef.current.getVoices();
     if (voices.length > 0) {
-      // Prefer English voices
-      const englishVoice = voices.find(v => v.lang.startsWith('en')) || voices[0];
-      if (englishVoice) {
-        utterance.voice = englishVoice;
-      }
+      // Prefer English US voices, then any English voice
+      const englishUSVoice = voices.find(v => v.lang === 'en-US');
+      const englishVoice = voices.find(v => v.lang.startsWith('en'));
+      utterance.voice = englishUSVoice || englishVoice || voices[0] || null;
     }
 
-    synthRef.current.speak(utterance);
+    // iOS workaround: add small delay and use speechSynthesis directly
+    setTimeout(() => {
+      window.speechSynthesis.speak(utterance);
+    }, 100);
   }, []);
 
   const processCommand = useCallback((transcript: string) => {
@@ -372,6 +375,13 @@ export function useVoiceAssistant(actions: VoiceActions) {
     const SpeechRecognitionAPI = (window as WindowWithSpeechRecognition).SpeechRecognition ||
                                   (window as WindowWithSpeechRecognition).webkitSpeechRecognition;
     if (!SpeechRecognitionAPI) return;
+
+    // iOS fix: "prime" speech synthesis with a silent utterance on user gesture
+    if (synthRef.current) {
+      const primer = new SpeechSynthesisUtterance('');
+      primer.volume = 0;
+      synthRef.current.speak(primer);
+    }
 
     const recognition = new SpeechRecognitionAPI();
     recognition.continuous = false;
