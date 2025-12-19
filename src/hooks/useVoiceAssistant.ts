@@ -119,36 +119,44 @@ export function useVoiceAssistant(actions: VoiceActions) {
     // Get exercises excluding category headers
     const realExercises = actions.exercises.filter(e => !e.category);
 
-    // Exercise lookup commands
-    if (command.includes('exercise') || command.includes('what is') || command.includes("what's")) {
+    // Check for ordinal words or numbers first (for exercise lookup)
+    let exerciseIndex = -1;
+    let foundOrdinal = false;
+
+    for (const [word, num] of Object.entries(ORDINAL_MAP)) {
+      if (command.includes(word)) {
+        foundOrdinal = true;
+        if (num === -1) { // "next" - default to first
+          exerciseIndex = 0;
+        } else if (num === -2) { // "last"
+          exerciseIndex = realExercises.length - 1;
+        } else {
+          exerciseIndex = num - 1; // Convert to 0-based index
+        }
+        break;
+      }
+    }
+
+    // Check for numeric digits (e.g., "exercise 2", "number 3")
+    if (exerciseIndex === -1) {
+      const numMatch = command.match(/(\d+)/);
+      if (numMatch && numMatch[1]) {
+        exerciseIndex = parseInt(numMatch[1], 10) - 1;
+        foundOrdinal = true;
+      }
+    }
+
+    // Exercise lookup - trigger on ordinals + exercise context, or "what is/what's" questions
+    const isExerciseQuestion = command.includes('exercise') ||
+                               command.includes('what is') ||
+                               command.includes("what's") ||
+                               command.includes('whats') ||
+                               command.includes('tell me');
+
+    if (foundOrdinal && isExerciseQuestion) {
       if (!actions.selectedDay) {
         speak("Please select a workout day first, then I can tell you about your exercises.");
         return true;
-      }
-
-      // Check for ordinal words or numbers
-      let exerciseIndex = -1;
-
-      // Check for ordinal words (first, second, etc.)
-      for (const [word, num] of Object.entries(ORDINAL_MAP)) {
-        if (command.includes(word)) {
-          if (num === -1) { // "next" - we'd need current context, default to first
-            exerciseIndex = 0;
-          } else if (num === -2) { // "last"
-            exerciseIndex = realExercises.length - 1;
-          } else {
-            exerciseIndex = num - 1; // Convert to 0-based index
-          }
-          break;
-        }
-      }
-
-      // Check for numeric digits (e.g., "exercise 2", "number 3")
-      if (exerciseIndex === -1) {
-        const numMatch = command.match(/(\d+)/);
-        if (numMatch && numMatch[1]) {
-          exerciseIndex = parseInt(numMatch[1], 10) - 1; // Convert to 0-based
-        }
       }
 
       if (exerciseIndex >= 0 && exerciseIndex < realExercises.length) {
@@ -173,12 +181,16 @@ export function useVoiceAssistant(actions: VoiceActions) {
         speak(`You only have ${realExercises.length} exercises today.`);
         return true;
       }
+    }
 
-      // If they just asked "what exercises" or similar, list the count
-      if (command.includes('how many') || command.includes('exercises')) {
-        speak(`You have ${realExercises.length} exercises for ${actions.selectedDay}'s workout.`);
+    // How many exercises question
+    if (command.includes('how many') && command.includes('exercise')) {
+      if (!actions.selectedDay) {
+        speak("Please select a workout day first.");
         return true;
       }
+      speak(`You have ${realExercises.length} exercises for ${actions.selectedDay}'s workout.`);
+      return true;
     }
 
     // Day navigation commands
