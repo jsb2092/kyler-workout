@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Header } from './components/Header';
 import { GoalsCard } from './components/GoalsCard';
 import { DaySelector } from './components/DaySelector';
@@ -8,9 +8,12 @@ import { TimerModal } from './components/TimerModal';
 import { TipsCard } from './components/TipsCard';
 import { CompleteButton } from './components/CompleteButton';
 import { DataManager } from './components/DataManager';
+import { VoiceButton } from './components/VoiceButton';
 import { useDatabase } from './hooks/useDatabase';
 import { useStreak } from './hooks/useStreak';
 import { useTimer } from './hooks/useTimer';
+import { useVoiceAssistant } from './hooks/useVoiceAssistant';
+import { workoutData } from './data/workouts';
 import type { DayName } from './types';
 
 export default function App() {
@@ -60,6 +63,40 @@ export default function App() {
     }
   };
 
+  // Voice assistant callbacks
+  const handleVoiceStartWarmup = useCallback(() => {
+    if (selectedDay) {
+      const warmupExercise = workoutData[selectedDay].exercises.find(e => e.isWarmup);
+      if (warmupExercise) {
+        startTimer(warmupExercise, 'warmup');
+      }
+    }
+  }, [selectedDay, startTimer]);
+
+  const handleVoiceStartCooldown = useCallback(() => {
+    if (selectedDay) {
+      const cooldownExercise = workoutData[selectedDay].exercises.find(e => e.isCooldown);
+      if (cooldownExercise) {
+        startTimer(cooldownExercise, 'cooldown');
+      }
+    }
+  }, [selectedDay, startTimer]);
+
+  const { isListening, isSupported, lastCommand, toggleListening } = useVoiceAssistant({
+    onSelectDay: handleSelectDay,
+    onBack: handleBack,
+    onStartWarmup: handleVoiceStartWarmup,
+    onStartCooldown: handleVoiceStartCooldown,
+    onTogglePause: togglePause,
+    onResetTimer: resetTimer,
+    onCloseTimer: closeTimer,
+    onCompleteWorkout: handleComplete,
+    selectedDay,
+    timerActive,
+    isPaused,
+    completedToday,
+  });
+
   if (!isReady) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white flex items-center justify-center">
@@ -69,7 +106,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white p-4 pb-24">
       {timerActive && timerData && (
         <TimerModal
           timerData={timerData}
@@ -119,6 +156,13 @@ export default function App() {
       </div>
 
       <DataManager onDataChange={refreshStreak} />
+
+      <VoiceButton
+        isListening={isListening}
+        isSupported={isSupported}
+        lastCommand={lastCommand}
+        onToggle={toggleListening}
+      />
     </div>
   );
 }

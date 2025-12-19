@@ -5,6 +5,7 @@
 /* Custom styles for the workout app */
 html {
   -webkit-tap-highlight-color: transparent;
+  background-color: #0f172a;
 }
 
 body {
@@ -13,6 +14,7 @@ body {
     'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: #0f172a;
 }
 
 /* Safe area insets for iOS */
@@ -51,4 +53,20 @@ button {
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(100, 116, 139, 0.7);
+}
+
+/* Voice command fade-in animation */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
 }
