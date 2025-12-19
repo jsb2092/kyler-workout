@@ -166,11 +166,19 @@ export function useVoiceAssistant(actions: VoiceActions) {
     }
 
     // Exercise lookup - trigger on ordinals + exercise context, or "what is/what's" questions
+    // Be forgiving of speech recognition errors (exerices, exercize, etc.)
     const isExerciseQuestion = command.includes('exercise') ||
+                               command.includes('exer') ||  // catches exerices, exercize, etc.
                                command.includes('what is') ||
                                command.includes("what's") ||
                                command.includes('whats') ||
-                               command.includes('tell me');
+                               command.includes('what is my') ||
+                               command.includes('tell me') ||
+                               command.includes('my first') ||
+                               command.includes('my second') ||
+                               command.includes('my third') ||
+                               command.includes('my last') ||
+                               command.includes('my next');
 
     if (foundOrdinal && isExerciseQuestion) {
       if (!actions.selectedDay) {
