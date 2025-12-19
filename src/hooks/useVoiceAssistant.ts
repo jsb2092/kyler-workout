@@ -93,6 +93,14 @@ export function useVoiceAssistant(actions: VoiceActions) {
 
     if (supported) {
       synthRef.current = window.speechSynthesis;
+      // iOS: voices are loaded asynchronously
+      if (synthRef.current.onvoiceschanged !== undefined) {
+        synthRef.current.onvoiceschanged = () => {
+          // Voices loaded, ready to speak
+        };
+      }
+      // Trigger voice loading
+      synthRef.current.getVoices();
     }
   }, []);
 
@@ -106,6 +114,17 @@ export function useVoiceAssistant(actions: VoiceActions) {
     utterance.rate = 1.0;
     utterance.pitch = 1.0;
     utterance.volume = 1.0;
+
+    // iOS fix: need to use a voice explicitly
+    const voices = synthRef.current.getVoices();
+    if (voices.length > 0) {
+      // Prefer English voices
+      const englishVoice = voices.find(v => v.lang.startsWith('en')) || voices[0];
+      if (englishVoice) {
+        utterance.voice = englishVoice;
+      }
+    }
+
     synthRef.current.speak(utterance);
   }, []);
 

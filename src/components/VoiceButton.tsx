@@ -1,4 +1,4 @@
-import { Mic, MicOff } from 'lucide-react';
+import { Mic, Volume2 } from 'lucide-react';
 
 interface VoiceButtonProps {
   isListening: boolean;
@@ -9,14 +9,28 @@ interface VoiceButtonProps {
 
 export function VoiceButton({ isListening, isSupported, lastCommand, onToggle }: VoiceButtonProps) {
   if (!isSupported) {
-    return null;
+    return (
+      <div className="fixed bottom-10 right-6 z-40 safe-area-bottom">
+        <div className="bg-slate-800 border border-red-500/50 rounded-lg px-3 py-2 text-sm text-red-400">
+          Voice not supported in this browser
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="fixed bottom-10 right-6 z-40 flex flex-col items-end gap-2 safe-area-bottom">
       {lastCommand && (
-        <div className="bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-300 max-w-[200px] animate-fade-in">
-          "{lastCommand}"
+        <div className="bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-300 max-w-[250px] animate-fade-in">
+          <div className="flex items-center gap-2">
+            <Volume2 className="w-4 h-4 text-blue-400 flex-shrink-0" />
+            <span>"{lastCommand}"</span>
+          </div>
+        </div>
+      )}
+      {isListening && (
+        <div className="bg-red-500/20 border border-red-500/50 rounded-lg px-3 py-2 text-sm text-red-300 animate-pulse">
+          Listening... speak now
         </div>
       )}
       <button
@@ -31,12 +45,9 @@ export function VoiceButton({ isListening, isSupported, lastCommand, onToggle }:
         {isListening ? (
           <Mic className="w-6 h-6 text-white" />
         ) : (
-          <MicOff className="w-6 h-6 text-white" />
+          <Mic className="w-6 h-6 text-white opacity-70" />
         )}
       </button>
-      {isListening && (
-        <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-400 rounded-full animate-ping" />
-      )}
     </div>
   );
 }
