@@ -13,7 +13,7 @@ export function VoiceButton({ isListening, isSupported, lastCommand, onToggle }:
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-2">
+    <div className="fixed bottom-10 right-6 z-40 flex flex-col items-end gap-2 safe-area-bottom">
       {lastCommand && (
         <div className="bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-300 max-w-[200px] animate-fade-in">
           "{lastCommand}"
