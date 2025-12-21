@@ -156,10 +156,11 @@ export function useVoiceAssistant(actions: VoiceActions) {
   }, []);
 
   const speak = useCallback((text: string) => {
-    if (!synthRef.current) return;
+    const synth = window.speechSynthesis;
+    if (!synth) return;
 
-    // Cancel any ongoing speech
-    synthRef.current.cancel();
+    // Cancel any ongoing speech and reset (iOS fix)
+    synth.cancel();
 
     // Pause listening while speaking to avoid hearing ourselves
     if (recognitionRef.current && isListening) {
@@ -174,7 +175,7 @@ export function useVoiceAssistant(actions: VoiceActions) {
     utterance.lang = 'en-US';
 
     // iOS fix: need to use a voice explicitly
-    const voices = synthRef.current.getVoices();
+    const voices = synth.getVoices();
     if (voices.length > 0) {
       // Prefer English US voices, then any English voice
       const englishUSVoice = voices.find(v => v.lang === 'en-US');
@@ -196,19 +197,23 @@ export function useVoiceAssistant(actions: VoiceActions) {
     utterance.onerror = resetSpeaking;
 
     // Fallback timeout in case onend doesn't fire (common on mobile)
-    // Estimate speech duration: ~100ms per character + 2 seconds buffer
-    const estimatedDuration = Math.max(text.length * 100 + 2000, 3000);
+    // Estimate speech duration: ~80ms per character + 1 second buffer
+    const estimatedDuration = Math.max(text.length * 80 + 1000, 2000);
     setTimeout(() => {
       // Check if speech synthesis is actually still speaking
-      if (!window.speechSynthesis.speaking) {
+      if (!synth.speaking) {
         resetSpeaking();
       }
     }, estimatedDuration);
 
-    // iOS workaround: add small delay and use speechSynthesis directly
+    // iOS workaround: small delay after cancel, then speak
     setTimeout(() => {
-      window.speechSynthesis.speak(utterance);
-    }, 100);
+      // iOS sometimes needs a resume after cancel
+      if (synth.paused) {
+        synth.resume();
+      }
+      synth.speak(utterance);
+    }, 50);
   }, [isListening]);
 
   const processCommand = useCallback((transcript: string) => {
