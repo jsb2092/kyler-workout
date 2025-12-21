@@ -53,16 +53,17 @@ export async function initDatabase(): Promise<IDBPDatabase<WorkoutDB>> {
 
 export async function markDayComplete(dayName: DayName, isRestDay: boolean): Promise<void> {
   const db = await initDatabase();
-  const today = new Date().toISOString().split('T')[0]!;
+  // Use the expected date for this day (e.g., marking Friday on Saturday uses Friday's date)
+  const expectedDate = getMostRecentDateForDay(dayName);
 
-  // Check if already completed today
-  const existing = await db.getAllFromIndex('completions', 'by-date', today);
+  // Check if already completed for this week's occurrence
+  const existing = await db.getAllFromIndex('completions', 'by-date', expectedDate);
   const alreadyCompleted = existing.some(c => c.dayName === dayName);
 
   if (!alreadyCompleted) {
     await db.add('completions', {
       dayName,
-      completedDate: today,
+      completedDate: expectedDate,
       isRestDay,
       createdAt: new Date().toISOString(),
     });
@@ -78,8 +79,9 @@ export async function getCompletionHistory(limit: number = 30): Promise<WorkoutC
 
 export async function wasCompletedToday(dayName: DayName): Promise<boolean> {
   const db = await initDatabase();
-  const today = new Date().toISOString().split('T')[0]!;
-  const completions = await db.getAllFromIndex('completions', 'by-date', today);
+  // Check if this day was completed for its expected date this week
+  const expectedDate = getMostRecentDateForDay(dayName);
+  const completions = await db.getAllFromIndex('completions', 'by-date', expectedDate);
   return completions.some(c => c.dayName === dayName);
 }
 
@@ -93,7 +95,7 @@ export function getTodayDayName(): DayName {
 
 // Get the most recent date for a given day of the week
 // If that day is today, returns today. Otherwise returns the most recent past occurrence.
-function getMostRecentDateForDay(dayName: DayName): string {
+export function getMostRecentDateForDay(dayName: DayName): string {
   const today = new Date();
   const todayDayIndex = today.getDay();
   const targetDayIndex = JS_DAY_NAMES.indexOf(dayName);
