@@ -129,28 +129,29 @@ export async function getWeekCompletions(): Promise<Set<DayName>> {
 }
 
 export async function calculateStreak(): Promise<number> {
-  // Get this week's completions (same logic as getWeekCompletions)
-  const completedDays = await getWeekCompletions();
+  const db = await initDatabase();
+  const all = await db.getAll('completions');
 
-  if (completedDays.size === 0) return 0;
+  if (all.length === 0) return 0;
 
-  // Days in chronological order for the week (Sun is last Sunday, Sat is today if today is Saturday)
-  const chronologicalOrder: DayName[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  // Create a set of all completion dates for fast lookup
+  const completedDates = new Set(all.map(c => c.completedDate));
 
-  // Find the longest consecutive streak in the week (no wrapping - Sunday doesn't connect to Saturday)
-  let maxStreak = 0;
-  let currentStreak = 0;
+  // Start from today and count backwards through consecutive days
+  let streak = 0;
+  const date = new Date();
 
-  for (const day of chronologicalOrder) {
-    if (completedDays.has(day)) {
-      currentStreak++;
-      maxStreak = Math.max(maxStreak, currentStreak);
+  while (true) {
+    const dateStr = date.toISOString().split('T')[0]!;
+    if (completedDates.has(dateStr)) {
+      streak++;
+      date.setDate(date.getDate() - 1); // Go back one day
     } else {
-      currentStreak = 0;
+      break;
     }
   }
 
-  return maxStreak;
+  return streak;
 }
 
 export async function getLastWorkoutDate(): Promise<string | null> {
