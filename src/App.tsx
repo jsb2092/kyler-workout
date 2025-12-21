@@ -34,6 +34,9 @@ export default function App() {
   });
   const [sassyCode, setSassyCode] = useState<string>(generateCode);
   const [sassyWarnings, setSassyWarnings] = useState<number>(0);
+  const [assistantName, setAssistantName] = useState<string>(() => {
+    return localStorage.getItem('assistant-name') || 'Rocky';
+  });
   const [selectedVoice, setSelectedVoice] = useState<string | null>(() => {
     // Load saved voice preference from localStorage
     return localStorage.getItem('kbot-voice');
@@ -66,6 +69,11 @@ export default function App() {
     } else {
       localStorage.removeItem('kbot-voice');
     }
+  };
+
+  const handleAssistantNameChange = (name: string) => {
+    setAssistantName(name);
+    localStorage.setItem('assistant-name', name);
   };
 
   const handleSassyChange = (enabled: boolean) => {
@@ -200,6 +208,7 @@ export default function App() {
     sassyEnabled,
     sassyCode,
     onSassyWarning: handleSassyWarning,
+    assistantName,
   });
 
   if (!isReady) {
@@ -210,17 +219,17 @@ export default function App() {
     );
   }
 
-  // K-Bot ban screen
+  // Assistant ban screen
   if (banTimeLeft > 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-900 via-slate-900 to-slate-900 text-white flex items-center justify-center p-4">
         <div className="text-center">
           <div className="text-6xl mb-4">🚫</div>
-          <h1 className="text-3xl font-bold mb-2">K-Bot is upset!</h1>
+          <h1 className="text-3xl font-bold mb-2">{assistantName} is upset!</h1>
           <p className="text-xl text-slate-300 mb-6">Maybe next time you'll be nicer...</p>
           <div className="bg-slate-800 rounded-2xl p-6 border border-red-500/30">
             <div className="text-5xl font-mono font-bold text-red-400">{banTimeLeft}s</div>
-            <p className="text-slate-400 mt-2">until K-Bot forgives you</p>
+            <p className="text-slate-400 mt-2">until {assistantName} forgives you</p>
           </div>
         </div>
       </div>
@@ -301,6 +310,8 @@ export default function App() {
           sassyCode={sassyCode}
           onSassyChange={handleSassyChange}
           onRequestSassyCode={requestSassyCode}
+          assistantName={assistantName}
+          onAssistantNameChange={handleAssistantNameChange}
         />
 
       <VoiceButton

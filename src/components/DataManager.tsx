@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { Download, Upload, Trash2, Settings, X, Volume2, Sparkles } from 'lucide-react';
+import { Download, Upload, Trash2, Settings, X, Volume2, Sparkles, User } from 'lucide-react';
 import { exportData, importData, clearAllData } from '../database';
+import { ASSISTANT_NAMES } from '../hooks/useVoiceAssistant';
 
 interface DataManagerProps {
   onDataChange: () => void;
@@ -10,9 +11,11 @@ interface DataManagerProps {
   sassyCode: string;
   onSassyChange: (enabled: boolean) => void;
   onRequestSassyCode: () => void;
+  assistantName: string;
+  onAssistantNameChange: (name: string) => void;
 }
 
-export function DataManager({ onDataChange, selectedVoice, onVoiceChange, sassyEnabled, sassyCode, onSassyChange, onRequestSassyCode }: DataManagerProps) {
+export function DataManager({ onDataChange, selectedVoice, onVoiceChange, sassyEnabled, sassyCode, onSassyChange, onRequestSassyCode, assistantName, onAssistantNameChange }: DataManagerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [showConfirmClear, setShowConfirmClear] = useState(false);
@@ -54,7 +57,7 @@ export function DataManager({ onDataChange, selectedVoice, onVoiceChange, sassyE
     if (!synth) return;
 
     synth.cancel();
-    const utterance = new SpeechSynthesisUtterance("Hi! I'm K-Bot, your workout buddy!");
+    const utterance = new SpeechSynthesisUtterance(`Hi! I'm ${assistantName}, your workout buddy!`);
     utterance.rate = 1.0;
     utterance.pitch = 1.05;
 
@@ -249,9 +252,31 @@ export function DataManager({ onDataChange, selectedVoice, onVoiceChange, sassyE
           Export your data regularly to keep a backup!
         </p>
 
+        {/* Assistant Name Settings */}
+        <div className="mt-6 pt-4 border-t border-slate-700">
+          <div className="flex items-center gap-2 mb-3">
+            <User className="w-4 h-4 text-blue-400" />
+            <h4 className="text-sm font-semibold text-slate-300">Assistant Name</h4>
+          </div>
+          <select
+            value={assistantName}
+            onChange={(e) => onAssistantNameChange(e.target.value)}
+            className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 focus:outline-none"
+          >
+            {ASSISTANT_NAMES.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-slate-500 mt-1">
+            Say "{assistantName}, ..." to give commands
+          </p>
+        </div>
+
         {/* Voice Settings */}
         <div className="mt-6 pt-4 border-t border-slate-700">
-          <h4 className="text-sm font-semibold text-slate-300 mb-3">K-Bot Voice</h4>
+          <h4 className="text-sm font-semibold text-slate-300 mb-3">{assistantName}'s Voice</h4>
           <div className="flex gap-2">
             <select
               value={selectedVoice || 'auto'}
@@ -280,7 +305,7 @@ export function DataManager({ onDataChange, selectedVoice, onVoiceChange, sassyE
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-yellow-400" />
-              <span className="text-sm font-semibold text-slate-300">K-Bot Sass Mode</span>
+              <span className="text-sm font-semibold text-slate-300">{assistantName} Sass Mode</span>
             </div>
             <button
               onClick={handleSassyToggleClick}
@@ -296,7 +321,7 @@ export function DataManager({ onDataChange, selectedVoice, onVoiceChange, sassyE
             </button>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            {sassyEnabled ? 'K-Bot will have attitude when you\'re rude' : 'K-Bot will be polite no matter what'}
+            {sassyEnabled ? `${assistantName} will have attitude when you're rude` : `${assistantName} will be polite no matter what`}
           </p>
         </div>
 
@@ -305,7 +330,7 @@ export function DataManager({ onDataChange, selectedVoice, onVoiceChange, sassyE
           <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4">
             <div className="bg-slate-800 rounded-2xl p-6 max-w-xs w-full border border-yellow-500/30">
               <h4 className="text-lg font-bold text-center mb-2">Disable Sass Mode</h4>
-              <p className="text-sm text-yellow-400 text-center mb-4">Ask K-Bot for the code</p>
+              <p className="text-sm text-yellow-400 text-center mb-4">Ask {assistantName} for the code</p>
               <input
                 type="text"
                 maxLength={4}
@@ -320,7 +345,7 @@ export function DataManager({ onDataChange, selectedVoice, onVoiceChange, sassyE
                 }`}
               />
               {codeError && (
-                <p className="text-red-400 text-sm text-center mt-2">Wrong code! Ask K-Bot nicely.</p>
+                <p className="text-red-400 text-sm text-center mt-2">Wrong code! Ask {assistantName} nicely.</p>
               )}
               <div className="flex gap-2 mt-4">
                 <button
@@ -341,7 +366,7 @@ export function DataManager({ onDataChange, selectedVoice, onVoiceChange, sassyE
         )}
 
         <div className="mt-6 pt-4 border-t border-slate-700 text-center">
-          <p className="text-xs text-slate-500">Version 1.2.18</p>
+          <p className="text-xs text-slate-500">Version 1.2.19</p>
         </div>
       </div>
     </div>

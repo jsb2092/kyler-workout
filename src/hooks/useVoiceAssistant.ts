@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { DayName, Exercise } from '../types';
 
-// K-Bot - the voice assistant name (spelled for speech as "KayBot")
-const ASSISTANT_NAME = 'KayBot';
+// Available assistant names
+export const ASSISTANT_NAMES = ['Rocky', 'Coach', 'Jarvis', 'Max', 'Flex'] as const;
 
 // Web Speech API types
 interface SpeechRecognitionEvent extends Event {
@@ -48,6 +48,7 @@ interface VoiceActions {
   sassyEnabled: boolean;
   sassyCode: string;
   onSassyWarning: () => 'warn' | 'reenable';
+  assistantName: string;
 }
 
 // Map ordinal words to numbers
@@ -270,10 +271,11 @@ export function useVoiceAssistant(actions: VoiceActions) {
     let command = transcript.toLowerCase().trim();
     setLastCommand(command);
 
-    // Check if command is addressed to K-Bot / KayBot (flexible matching for speech recognition variations)
-    // Matches: k-bot, k bot, kbot, kay bot, kay-bot, kaybot, and with hey/okay prefix
-    const kbotPattern = /^(hey |okay |ok )?(k[- ]?bot|kay[- ]?bot|kaybot|cable|cabot)/i;
-    const isAddressedToKBot = kbotPattern.test(command);
+    // Check if command is addressed to the assistant by name
+    // Create pattern based on selected assistant name
+    const nameLower = actions.assistantName.toLowerCase();
+    const namePattern = new RegExp(`^(hey |okay |ok )?${nameLower}[,]?\\s*`, 'i');
+    const isAddressedToAssistant = namePattern.test(command);
 
     // Check if it's a mean comment (these don't require addressing K-Bot)
     const isMeanComment = command.includes('shut up') ||
@@ -288,13 +290,13 @@ export function useVoiceAssistant(actions: VoiceActions) {
                           command.includes('go away') ||
                           command.includes('leave me alone');
 
-    // If not addressed to K-Bot and not a mean comment, ignore
-    if (!isAddressedToKBot && !isMeanComment) {
+    // If not addressed to assistant and not a mean comment, ignore
+    if (!isAddressedToAssistant && !isMeanComment) {
       return false;
     }
 
-    // Strip "K-Bot" / "KayBot" prefix if present
-    command = command.replace(/^(hey |okay |ok )?(k[- ]?bot|kay[- ]?bot|kaybot|cable|cabot),?\s*/i, '');
+    // Strip assistant name prefix if present
+    command = command.replace(namePattern, '');
 
     // Get exercises excluding category headers, warm-ups, and cool-downs
     const realExercises = actions.exercises.filter(e => !e.category && !e.isWarmup && !e.isCooldown);
@@ -501,7 +503,7 @@ export function useVoiceAssistant(actions: VoiceActions) {
 
     // Help command
     if (command.includes('help') || command.includes('commands') || command.includes('what can you do')) {
-      speak(`I'm ${ASSISTANT_NAME}, your workout buddy! You can say things like: go to Monday, what's my first exercise, what's my second exercise, start warmup, pause, resume, or complete workout.`);
+      speak(`I'm ${actions.assistantName}, your workout buddy! You can say things like: go to Monday, what's my first exercise, what's my second exercise, start warmup, pause, resume, or complete workout.`);
       return true;
     }
 
@@ -583,7 +585,7 @@ export function useVoiceAssistant(actions: VoiceActions) {
 
     // Greeting
     if (command.includes('hello') || command.includes('hi') || command.includes('hey')) {
-      speak(`Hey there! I'm ${ASSISTANT_NAME}, ready to help with your workout. What can I do for you?`);
+      speak(`Hey there! I'm ${actions.assistantName}, ready to help with your workout. What can I do for you?`);
       return true;
     }
 
