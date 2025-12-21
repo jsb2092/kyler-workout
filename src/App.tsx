@@ -20,12 +20,19 @@ import { useWakeLock } from './hooks/useWakeLock';
 import { useCustomWorkouts } from './hooks/useCustomWorkouts';
 import type { DayName } from './types';
 
+// Generate a random 4-digit code
+const generateCode = () => Math.floor(1000 + Math.random() * 9000).toString();
+
 export default function App() {
   const [selectedDay, setSelectedDay] = useState<DayName | null>(null);
   const [expandedExercise, setExpandedExercise] = useState<number | null>(null);
   const [showGoalsEditor, setShowGoalsEditor] = useState(false);
   const [showWorkoutEditor, setShowWorkoutEditor] = useState(false);
   const [banTimeLeft, setBanTimeLeft] = useState<number>(0);
+  const [sassyEnabled, setSassyEnabled] = useState<boolean>(() => {
+    return localStorage.getItem('kbot-sassy') !== 'false';
+  });
+  const [sassyCode, setSassyCode] = useState<string>(generateCode);
   const [selectedVoice, setSelectedVoice] = useState<string | null>(() => {
     // Load saved voice preference from localStorage
     return localStorage.getItem('kbot-voice');
@@ -58,6 +65,18 @@ export default function App() {
     } else {
       localStorage.removeItem('kbot-voice');
     }
+  };
+
+  const handleSassyChange = (enabled: boolean) => {
+    setSassyEnabled(enabled);
+    localStorage.setItem('kbot-sassy', enabled.toString());
+    // Generate new code for next time
+    setSassyCode(generateCode());
+  };
+
+  const requestSassyCode = () => {
+    // Generate a new code each time it's requested
+    setSassyCode(generateCode());
   };
 
   const { isReady } = useDatabase();
@@ -161,6 +180,8 @@ export default function App() {
     exercises: currentExercises,
     selectedVoice,
     enabled: banTimeLeft === 0,
+    sassyEnabled,
+    sassyCode,
   });
 
   if (!isReady) {
@@ -258,6 +279,10 @@ export default function App() {
           onDataChange={refreshStreak}
           selectedVoice={selectedVoice}
           onVoiceChange={handleVoiceChange}
+          sassyEnabled={sassyEnabled}
+          sassyCode={sassyCode}
+          onSassyChange={handleSassyChange}
+          onRequestSassyCode={requestSassyCode}
         />
 
       <VoiceButton

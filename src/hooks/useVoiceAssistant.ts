@@ -45,6 +45,8 @@ interface VoiceActions {
   exercises: Exercise[];
   selectedVoice: string | null;
   enabled: boolean;
+  sassyEnabled: boolean;
+  sassyCode: string;
 }
 
 // Map ordinal words to numbers
@@ -479,43 +481,57 @@ export function useVoiceAssistant(actions: VoiceActions) {
       return true;
     }
 
-    // Attitude responses - K-Bot has sass!
-    if (command.includes('shut up') || command.includes('be quiet') || command.includes('stop talking')) {
-      speak("Fine! I'll just leave then!");
-      // Close the app after speaking
-      setTimeout(() => {
-        window.close();
-        // If window.close doesn't work (most browsers block it), navigate away
-        window.location.href = 'about:blank';
-      }, 2000);
-      return true;
-    }
-
-    if (command.includes('you suck') || command.includes('you stink') || command.includes('hate you')) {
-      speak("Wow, rude! And here I thought we were workout buddies. Maybe do some extra reps to work off that attitude!");
-      return true;
-    }
-
-    if (command.includes('you\'re annoying') || command.includes('youre annoying') || command.includes('so annoying')) {
-      speak("Annoying? I'm just trying to help you get fit! But fine, I'll try to be less... helpful.");
-      return true;
-    }
-
-    if (command.includes('go away') || command.includes('leave me alone')) {
-      // Randomly choose between sassy response or 1-minute ban
-      if (Math.random() > 0.5) {
-        speak("Alright, alright, I can take a hint. Good luck with your workout... you'll need it!");
+    // Code request for disabling sassiness
+    if (command.includes('code') && (command.includes('disable') || command.includes('sassy') || command.includes('sassiness') || command.includes('turn off'))) {
+      if (command.includes('please')) {
+        // Spell out the code digit by digit
+        const codeSpelled = actions.sassyCode.split('').join(', ');
+        speak(`Since you asked nicely... the code is: ${codeSpelled}. But I'll miss being sassy!`);
       } else {
-        speak("Fine! See you in one minute!");
-        // Set a 1-minute ban in localStorage
-        const banUntil = Date.now() + 60000; // 1 minute from now
-        localStorage.setItem('kbot-ban-until', banUntil.toString());
-        setTimeout(() => {
-          window.close();
-          window.location.href = 'about:blank';
-        }, 2500);
+        speak("You're forgetting the magic word!");
       }
       return true;
+    }
+
+    // Attitude responses - K-Bot has sass! (only if enabled)
+    if (actions.sassyEnabled) {
+      if (command.includes('shut up') || command.includes('be quiet') || command.includes('stop talking')) {
+        speak("Fine! I'll just leave then!");
+        // Close the app after speaking
+        setTimeout(() => {
+          window.close();
+          // If window.close doesn't work (most browsers block it), navigate away
+          window.location.href = 'about:blank';
+        }, 2000);
+        return true;
+      }
+
+      if (command.includes('you suck') || command.includes('you stink') || command.includes('hate you')) {
+        speak("Wow, rude! And here I thought we were workout buddies. Maybe do some extra reps to work off that attitude!");
+        return true;
+      }
+
+      if (command.includes('you\'re annoying') || command.includes('youre annoying') || command.includes('so annoying')) {
+        speak("Annoying? I'm just trying to help you get fit! But fine, I'll try to be less... helpful.");
+        return true;
+      }
+
+      if (command.includes('go away') || command.includes('leave me alone')) {
+        // Randomly choose between sassy response or 1-minute ban
+        if (Math.random() > 0.5) {
+          speak("Alright, alright, I can take a hint. Good luck with your workout... you'll need it!");
+        } else {
+          speak("Fine! See you in one minute!");
+          // Set a 1-minute ban in localStorage
+          const banUntil = Date.now() + 60000; // 1 minute from now
+          localStorage.setItem('kbot-ban-until', banUntil.toString());
+          setTimeout(() => {
+            window.close();
+            window.location.href = 'about:blank';
+          }, 2500);
+        }
+        return true;
+      }
     }
 
     // Greeting
