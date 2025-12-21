@@ -284,6 +284,7 @@ export default function App() {
         isSupported={isSupported}
         alwaysOn={alwaysOn}
         isSpeaking={isSpeaking}
+        assistantName={assistantName}
         onToggle={toggleListening}
       />
 

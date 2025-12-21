@@ -64,8 +64,20 @@ export function DataManager({
     const synth = window.speechSynthesis;
     if (!synth) return;
 
+    const testPhrases = [
+      `Hi! I'm ${assistantName}, your workout buddy!`,
+      `Let's crush this workout together!`,
+      `You're doing amazing! Keep it up!`,
+      `Time to get those gains!`,
+      `No excuses, just results!`,
+      `Ready when you are, champ!`,
+      `Let's make today count!`,
+      `Push yourself, you've got this!`,
+    ];
+
     synth.cancel();
-    const utterance = new SpeechSynthesisUtterance(`Hi! I'm ${assistantName}, your workout buddy!`);
+    const randomPhrase = testPhrases[Math.floor(Math.random() * testPhrases.length)];
+    const utterance = new SpeechSynthesisUtterance(randomPhrase);
     utterance.rate = 1.0;
     utterance.pitch = 1.05;
 

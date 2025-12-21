@@ -5,10 +5,11 @@ interface VoiceButtonProps {
   isSupported: boolean;
   alwaysOn: boolean;
   isSpeaking: boolean;
+  assistantName: string;
   onToggle: () => void;
 }
 
-export function VoiceButton({ isListening, isSupported, alwaysOn, isSpeaking, onToggle }: VoiceButtonProps) {
+export function VoiceButton({ isListening, isSupported, alwaysOn, isSpeaking, assistantName, onToggle }: VoiceButtonProps) {
   if (!isSupported) {
     return (
       <div className="fixed bottom-10 right-6 z-40 safe-area-bottom">
@@ -21,7 +22,7 @@ export function VoiceButton({ isListening, isSupported, alwaysOn, isSpeaking, on
 
   // Determine the status message
   const getStatusMessage = () => {
-    if (isSpeaking) return 'K-Bot speaking...';
+    if (isSpeaking) return `${assistantName} speaking...`;
     if (isListening) return 'Listening...';
     if (alwaysOn) return 'Starting...';
     return null;
