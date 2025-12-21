@@ -341,7 +341,7 @@ export function DataManager({ onDataChange, selectedVoice, onVoiceChange, sassyE
         )}
 
         <div className="mt-6 pt-4 border-t border-slate-700 text-center">
-          <p className="text-xs text-slate-500">Version 1.2.16</p>
+          <p className="text-xs text-slate-500">Version 1.2.17</p>
         </div>
       </div>
     </div>

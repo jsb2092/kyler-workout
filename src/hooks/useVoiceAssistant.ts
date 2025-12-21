@@ -270,9 +270,9 @@ export function useVoiceAssistant(actions: VoiceActions) {
     let command = transcript.toLowerCase().trim();
     setLastCommand(command);
 
-    // Check if command is addressed to K-Bot (flexible matching for speech recognition variations)
+    // Check if command is addressed to K-Bot / KayBot (flexible matching for speech recognition variations)
     // Matches: k-bot, k bot, kbot, kay bot, kay-bot, kaybot, and with hey/okay prefix
-    const kbotPattern = /^(hey |okay |ok )?(k[- ]?bot|kay[- ]?bot|cable|cabot)/i;
+    const kbotPattern = /^(hey |okay |ok )?(k[- ]?bot|kay[- ]?bot|kaybot|cable|cabot)/i;
     const isAddressedToKBot = kbotPattern.test(command);
 
     // Check if it's a mean comment (these don't require addressing K-Bot)
@@ -293,8 +293,8 @@ export function useVoiceAssistant(actions: VoiceActions) {
       return false;
     }
 
-    // Strip "K-Bot" prefix if present
-    command = command.replace(/^(hey |okay |ok )?(k[- ]?bot|kay[- ]?bot|cable|cabot),?\s*/i, '');
+    // Strip "K-Bot" / "KayBot" prefix if present
+    command = command.replace(/^(hey |okay |ok )?(k[- ]?bot|kay[- ]?bot|kaybot|cable|cabot),?\s*/i, '');
 
     // Get exercises excluding category headers, warm-ups, and cool-downs
     const realExercises = actions.exercises.filter(e => !e.category && !e.isWarmup && !e.isCooldown);
