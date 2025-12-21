@@ -1,16 +1,63 @@
-import { useState, useRef } from 'react';
-import { Download, Upload, Trash2, Settings, X } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Download, Upload, Trash2, Settings, X, Volume2 } from 'lucide-react';
 import { exportData, importData, clearAllData } from '../database';
 
 interface DataManagerProps {
   onDataChange: () => void;
+  selectedVoice: string | null;
+  onVoiceChange: (voiceName: string | null) => void;
 }
 
-export function DataManager({ onDataChange }: DataManagerProps) {
+export function DataManager({ onDataChange, selectedVoice, onVoiceChange }: DataManagerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [showConfirmClear, setShowConfirmClear] = useState(false);
+  const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load available voices
+  useEffect(() => {
+    const loadVoices = () => {
+      const voices = window.speechSynthesis?.getVoices() || [];
+      // Filter to English voices only
+      const englishVoices = voices.filter(v => v.lang.startsWith('en'));
+      setAvailableVoices(englishVoices);
+    };
+
+    loadVoices();
+
+    // Voices may load asynchronously
+    if (window.speechSynthesis) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+
+    return () => {
+      if (window.speechSynthesis) {
+        window.speechSynthesis.onvoiceschanged = null;
+      }
+    };
+  }, []);
+
+  const handleVoiceChange = (voiceName: string) => {
+    onVoiceChange(voiceName === 'auto' ? null : voiceName);
+  };
+
+  const testVoice = () => {
+    const synth = window.speechSynthesis;
+    if (!synth) return;
+
+    synth.cancel();
+    const utterance = new SpeechSynthesisUtterance("Hi! I'm K-Bot, your workout buddy!");
+    utterance.rate = 1.0;
+    utterance.pitch = 1.05;
+
+    if (selectedVoice) {
+      const voice = availableVoices.find(v => v.name === selectedVoice);
+      if (voice) utterance.voice = voice;
+    }
+
+    synth.speak(utterance);
+  };
 
   const handleExport = async () => {
     try {
@@ -164,8 +211,34 @@ export function DataManager({ onDataChange }: DataManagerProps) {
           Export your data regularly to keep a backup!
         </p>
 
+        {/* Voice Settings */}
+        <div className="mt-6 pt-4 border-t border-slate-700">
+          <h4 className="text-sm font-semibold text-slate-300 mb-3">K-Bot Voice</h4>
+          <div className="flex gap-2">
+            <select
+              value={selectedVoice || 'auto'}
+              onChange={(e) => handleVoiceChange(e.target.value)}
+              className="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 focus:outline-none"
+            >
+              <option value="auto">Auto (Best Available)</option>
+              {availableVoices.map((voice) => (
+                <option key={voice.name} value={voice.name}>
+                  {voice.name}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={testVoice}
+              className="bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-purple-400 px-3 py-2 rounded-lg transition-colors"
+              aria-label="Test voice"
+            >
+              <Volume2 className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
         <div className="mt-6 pt-4 border-t border-slate-700 text-center">
-          <p className="text-xs text-slate-500">Version 1.2.4</p>
+          <p className="text-xs text-slate-500">Version 1.2.5</p>
         </div>
       </div>
     </div>

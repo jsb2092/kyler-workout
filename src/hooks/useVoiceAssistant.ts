@@ -43,6 +43,7 @@ interface VoiceActions {
   isPaused: boolean;
   completedToday: DayName | null;
   exercises: Exercise[];
+  selectedVoice: string | null;
 }
 
 // Map ordinal words to numbers
@@ -174,51 +175,58 @@ export function useVoiceAssistant(actions: VoiceActions) {
     utterance.volume = 1.0;
     utterance.lang = 'en-US';
 
-    // Select the most natural-sounding voice available
+    // Select voice - use user's choice or auto-select best available
     const voices = synth.getVoices();
     if (voices.length > 0) {
-      // Priority list of natural-sounding voices (in order of preference)
-      const preferredVoices = [
-        // iOS premium voices
-        'Samantha', 'Karen', 'Daniel', 'Moira', 'Tessa',
-        // macOS premium voices
-        'Ava', 'Allison', 'Susan',
-        // Google/Chrome voices (sound more natural)
-        'Google US English', 'Google UK English Female', 'Google UK English Male',
-        // Microsoft voices
-        'Microsoft Zira', 'Microsoft David', 'Microsoft Mark',
-        // Android voices
-        'English United States',
-      ];
+      let voiceToUse = null;
 
-      // Find the best available voice
-      let selectedVoice = null;
+      // If user selected a specific voice, use that
+      if (actions.selectedVoice) {
+        voiceToUse = voices.find(v => v.name === actions.selectedVoice);
+      }
 
-      // First try to find a preferred voice
-      for (const preferred of preferredVoices) {
-        const found = voices.find(v => v.name.includes(preferred));
-        if (found) {
-          selectedVoice = found;
-          break;
+      // Otherwise, auto-select the best available voice
+      if (!voiceToUse) {
+        // Priority list of natural-sounding voices (in order of preference)
+        const preferredVoices = [
+          // iOS premium voices
+          'Samantha', 'Karen', 'Daniel', 'Moira', 'Tessa',
+          // macOS premium voices
+          'Ava', 'Allison', 'Susan',
+          // Google/Chrome voices (sound more natural)
+          'Google US English', 'Google UK English Female', 'Google UK English Male',
+          // Microsoft voices
+          'Microsoft Zira', 'Microsoft David', 'Microsoft Mark',
+          // Android voices
+          'English United States',
+        ];
+
+        // First try to find a preferred voice
+        for (const preferred of preferredVoices) {
+          const found = voices.find(v => v.name.includes(preferred));
+          if (found) {
+            voiceToUse = found;
+            break;
+          }
+        }
+
+        // If no preferred voice, look for any premium/enhanced English voice
+        if (!voiceToUse) {
+          voiceToUse = voices.find(v =>
+            v.lang.startsWith('en') &&
+            (v.name.includes('Premium') || v.name.includes('Enhanced') || v.localService === false)
+          );
+        }
+
+        // Fall back to any English US voice, then any English voice
+        if (!voiceToUse) {
+          voiceToUse = voices.find(v => v.lang === 'en-US') ||
+                       voices.find(v => v.lang.startsWith('en')) ||
+                       voices[0];
         }
       }
 
-      // If no preferred voice, look for any premium/enhanced English voice
-      if (!selectedVoice) {
-        selectedVoice = voices.find(v =>
-          v.lang.startsWith('en') &&
-          (v.name.includes('Premium') || v.name.includes('Enhanced') || v.localService === false)
-        );
-      }
-
-      // Fall back to any English US voice, then any English voice
-      if (!selectedVoice) {
-        selectedVoice = voices.find(v => v.lang === 'en-US') ||
-                        voices.find(v => v.lang.startsWith('en')) ||
-                        voices[0];
-      }
-
-      utterance.voice = selectedVoice || null;
+      utterance.voice = voiceToUse || null;
     }
 
     // Track if we've already reset speaking state
@@ -252,7 +260,7 @@ export function useVoiceAssistant(actions: VoiceActions) {
       }
       synth.speak(utterance);
     }, 50);
-  }, [isListening]);
+  }, [isListening, actions.selectedVoice]);
 
   const processCommand = useCallback((transcript: string) => {
     let command = transcript.toLowerCase().trim();

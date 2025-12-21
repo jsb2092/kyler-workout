@@ -25,6 +25,19 @@ export default function App() {
   const [expandedExercise, setExpandedExercise] = useState<number | null>(null);
   const [showGoalsEditor, setShowGoalsEditor] = useState(false);
   const [showWorkoutEditor, setShowWorkoutEditor] = useState(false);
+  const [selectedVoice, setSelectedVoice] = useState<string | null>(() => {
+    // Load saved voice preference from localStorage
+    return localStorage.getItem('kbot-voice');
+  });
+
+  const handleVoiceChange = (voiceName: string | null) => {
+    setSelectedVoice(voiceName);
+    if (voiceName) {
+      localStorage.setItem('kbot-voice', voiceName);
+    } else {
+      localStorage.removeItem('kbot-voice');
+    }
+  };
 
   const { isReady } = useDatabase();
   const { streak, showCelebration, completedToday, weekCompletions, completeWorkout, checkCompletedToday, refreshStreak } = useStreak();
@@ -125,6 +138,7 @@ export default function App() {
     isPaused,
     completedToday,
     exercises: currentExercises,
+    selectedVoice,
   });
 
   if (!isReady) {
@@ -201,7 +215,11 @@ export default function App() {
         )}
       </div>
 
-      <DataManager onDataChange={refreshStreak} />
+      <DataManager
+          onDataChange={refreshStreak}
+          selectedVoice={selectedVoice}
+          onVoiceChange={handleVoiceChange}
+        />
 
       <VoiceButton
         isListening={isListening}
