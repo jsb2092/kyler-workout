@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Download, Upload, Trash2, Settings, X, Volume2, Sparkles, User } from 'lucide-react';
+import { Download, Upload, Trash2, Settings, X, Volume2, User } from 'lucide-react';
 import { exportData, importData, clearAllData } from '../database';
 import { ASSISTANT_NAMES } from '../hooks/useVoiceAssistant';
 
@@ -7,21 +7,14 @@ interface DataManagerProps {
   onDataChange: () => void;
   selectedVoice: string | null;
   onVoiceChange: (voiceName: string | null) => void;
-  sassyEnabled: boolean;
-  sassyCode: string;
-  onSassyChange: (enabled: boolean) => void;
-  onRequestSassyCode: () => void;
   assistantName: string;
   onAssistantNameChange: (name: string) => void;
 }
 
-export function DataManager({ onDataChange, selectedVoice, onVoiceChange, sassyEnabled, sassyCode, onSassyChange, onRequestSassyCode, assistantName, onAssistantNameChange }: DataManagerProps) {
+export function DataManager({ onDataChange, selectedVoice, onVoiceChange, assistantName, onAssistantNameChange }: DataManagerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [showConfirmClear, setShowConfirmClear] = useState(false);
-  const [showSassyCodePrompt, setShowSassyCodePrompt] = useState(false);
-  const [codeInput, setCodeInput] = useState('');
-  const [codeError, setCodeError] = useState(false);
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -119,37 +112,6 @@ export function DataManager({ onDataChange, selectedVoice, onVoiceChange, sassyE
     setShowConfirmClear(false);
     setMessage({ type: 'success', text: 'All data cleared' });
     onDataChange();
-  };
-
-  const handleSassyToggleClick = () => {
-    if (sassyEnabled) {
-      // Trying to disable - show code prompt (use existing code, don't regenerate)
-      setShowSassyCodePrompt(true);
-      setCodeInput('');
-      setCodeError(false);
-    } else {
-      // Enabling - no code needed
-      onSassyChange(true);
-    }
-  };
-
-  const handleCodeSubmit = () => {
-    if (codeInput === sassyCode) {
-      onSassyChange(false);
-      setShowSassyCodePrompt(false);
-      setCodeInput('');
-      setCodeError(false);
-      onRequestSassyCode(); // Generate new code for next time
-    } else {
-      setCodeError(true);
-    }
-  };
-
-  const handleCodeCancel = () => {
-    setShowSassyCodePrompt(false);
-    setCodeInput('');
-    setCodeError(false);
-    onRequestSassyCode(); // Generate new code for next attempt
   };
 
   if (!isOpen) {
@@ -300,73 +262,8 @@ export function DataManager({ onDataChange, selectedVoice, onVoiceChange, sassyE
           </div>
         </div>
 
-        {/* Sassy Mode Settings */}
-        <div className="mt-6 pt-4 border-t border-slate-700">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-yellow-400" />
-              <span className="text-sm font-semibold text-slate-300">{assistantName} Sass Mode</span>
-            </div>
-            <button
-              onClick={handleSassyToggleClick}
-              className={`relative w-12 h-6 rounded-full transition-colors ${
-                sassyEnabled ? 'bg-yellow-500' : 'bg-slate-600'
-              }`}
-            >
-              <div
-                className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                  sassyEnabled ? 'left-7' : 'left-1'
-                }`}
-              />
-            </button>
-          </div>
-          <p className="text-xs text-slate-500 mt-1">
-            {sassyEnabled ? `${assistantName} will have attitude when you're rude` : `${assistantName} will be polite no matter what`}
-          </p>
-        </div>
-
-        {/* Code Prompt Modal */}
-        {showSassyCodePrompt && (
-          <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4">
-            <div className="bg-slate-800 rounded-2xl p-6 max-w-xs w-full border border-yellow-500/30">
-              <h4 className="text-lg font-bold text-center mb-2">Disable Sass Mode</h4>
-              <p className="text-sm text-yellow-400 text-center mb-4">Ask {assistantName} for the code</p>
-              <input
-                type="text"
-                maxLength={4}
-                value={codeInput}
-                onChange={(e) => {
-                  setCodeInput(e.target.value.replace(/\D/g, ''));
-                  setCodeError(false);
-                }}
-                placeholder="Enter 4-digit code"
-                className={`w-full bg-slate-700 border rounded-lg px-4 py-3 text-center text-2xl font-mono tracking-widest focus:outline-none ${
-                  codeError ? 'border-red-500' : 'border-slate-600 focus:border-yellow-500'
-                }`}
-              />
-              {codeError && (
-                <p className="text-red-400 text-sm text-center mt-2">Wrong code! Ask {assistantName} nicely.</p>
-              )}
-              <div className="flex gap-2 mt-4">
-                <button
-                  onClick={handleCodeSubmit}
-                  className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-black py-2 px-4 rounded-lg font-semibold"
-                >
-                  Submit
-                </button>
-                <button
-                  onClick={handleCodeCancel}
-                  className="flex-1 bg-slate-600 hover:bg-slate-500 text-white py-2 px-4 rounded-lg font-semibold"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
         <div className="mt-6 pt-4 border-t border-slate-700 text-center">
-          <p className="text-xs text-slate-500">Version 1.2.19</p>
+          <p className="text-xs text-slate-500">Version 1.2.20</p>
         </div>
       </div>
     </div>
