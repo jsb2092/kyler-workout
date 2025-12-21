@@ -33,6 +33,7 @@ export default function App() {
     return localStorage.getItem('kbot-sassy') !== 'false';
   });
   const [sassyCode, setSassyCode] = useState<string>(generateCode);
+  const [sassyWarnings, setSassyWarnings] = useState<number>(0);
   const [selectedVoice, setSelectedVoice] = useState<string | null>(() => {
     // Load saved voice preference from localStorage
     return localStorage.getItem('kbot-voice');
@@ -72,11 +73,27 @@ export default function App() {
     localStorage.setItem('kbot-sassy', enabled.toString());
     // Generate new code for next time
     setSassyCode(generateCode());
+    // Reset warnings when toggling
+    setSassyWarnings(0);
   };
 
   const requestSassyCode = () => {
     // Generate a new code each time it's requested
     setSassyCode(generateCode());
+  };
+
+  const handleSassyWarning = () => {
+    if (sassyWarnings === 0) {
+      // First warning
+      setSassyWarnings(1);
+      return 'warn';
+    } else {
+      // Second offense - reenable sassiness
+      setSassyEnabled(true);
+      localStorage.setItem('kbot-sassy', 'true');
+      setSassyWarnings(0);
+      return 'reenable';
+    }
   };
 
   const { isReady } = useDatabase();
@@ -182,6 +199,7 @@ export default function App() {
     enabled: banTimeLeft === 0,
     sassyEnabled,
     sassyCode,
+    onSassyWarning: handleSassyWarning,
   });
 
   if (!isReady) {

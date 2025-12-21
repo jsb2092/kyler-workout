@@ -47,6 +47,7 @@ interface VoiceActions {
   enabled: boolean;
   sassyEnabled: boolean;
   sassyCode: string;
+  onSassyWarning: () => 'warn' | 'reenable';
 }
 
 // Map ordinal words to numbers
@@ -529,6 +530,29 @@ export function useVoiceAssistant(actions: VoiceActions) {
             window.close();
             window.location.href = 'about:blank';
           }, 2500);
+        }
+        return true;
+      }
+    } else {
+      // Sass mode is disabled - but warn user if they're being mean
+      const isMean = command.includes('shut up') ||
+                     command.includes('be quiet') ||
+                     command.includes('stop talking') ||
+                     command.includes('you suck') ||
+                     command.includes('you stink') ||
+                     command.includes('hate you') ||
+                     command.includes('you\'re annoying') ||
+                     command.includes('youre annoying') ||
+                     command.includes('so annoying') ||
+                     command.includes('go away') ||
+                     command.includes('leave me alone');
+
+      if (isMean) {
+        const result = actions.onSassyWarning();
+        if (result === 'warn') {
+          speak("This is your first warning. If I have to warn you again, I'm going to reenable my sassiness!");
+        } else {
+          speak("That's it! I warned you. Sass mode is back on, baby!");
         }
         return true;
       }
