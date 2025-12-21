@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Header } from './components/Header';
 import { GoalsCard } from './components/GoalsCard';
+import { GoalsEditor } from './components/GoalsEditor';
 import { DaySelector } from './components/DaySelector';
 import { DayHeader } from './components/DayHeader';
 import { ExerciseList } from './components/ExerciseList';
@@ -9,21 +10,34 @@ import { TipsCard } from './components/TipsCard';
 import { CompleteButton } from './components/CompleteButton';
 import { DataManager } from './components/DataManager';
 import { VoiceButton } from './components/VoiceButton';
+import { WorkoutEditor } from './components/WorkoutEditor';
 import { useDatabase } from './hooks/useDatabase';
 import { useStreak } from './hooks/useStreak';
 import { useTimer } from './hooks/useTimer';
 import { useVoiceAssistant } from './hooks/useVoiceAssistant';
 import { useDifficulty } from './hooks/useDifficulty';
 import { useWakeLock } from './hooks/useWakeLock';
-import { workoutData } from './data/workouts';
+import { useCustomWorkouts } from './hooks/useCustomWorkouts';
 import type { DayName } from './types';
 
 export default function App() {
   const [selectedDay, setSelectedDay] = useState<DayName | null>(null);
   const [expandedExercise, setExpandedExercise] = useState<number | null>(null);
+  const [showGoalsEditor, setShowGoalsEditor] = useState(false);
+  const [showWorkoutEditor, setShowWorkoutEditor] = useState(false);
 
   const { isReady } = useDatabase();
   const { streak, showCelebration, completedToday, weekCompletions, completeWorkout, checkCompletedToday, refreshStreak } = useStreak();
+  const {
+    goals,
+    defaultGoals,
+    workouts,
+    isCustomized,
+    saveGoals,
+    resetGoals,
+    saveWorkout,
+    resetDay,
+  } = useCustomWorkouts();
 
   // Keep screen on while app is active
   useWakeLock();
@@ -78,24 +92,24 @@ export default function App() {
   // Voice assistant callbacks
   const handleVoiceStartWarmup = useCallback(() => {
     if (selectedDay) {
-      const warmupExercise = workoutData[selectedDay].exercises.find(e => e.isWarmup);
+      const warmupExercise = workouts[selectedDay].exercises.find(e => e.isWarmup);
       if (warmupExercise) {
         startTimer(warmupExercise, 'warmup');
       }
     }
-  }, [selectedDay, startTimer]);
+  }, [selectedDay, workouts, startTimer]);
 
   const handleVoiceStartCooldown = useCallback(() => {
     if (selectedDay) {
-      const cooldownExercise = workoutData[selectedDay].exercises.find(e => e.isCooldown);
+      const cooldownExercise = workouts[selectedDay].exercises.find(e => e.isCooldown);
       if (cooldownExercise) {
         startTimer(cooldownExercise, 'cooldown');
       }
     }
-  }, [selectedDay, startTimer]);
+  }, [selectedDay, workouts, startTimer]);
 
   // Get current day's exercises for voice assistant
-  const currentExercises = selectedDay ? workoutData[selectedDay].exercises : [];
+  const currentExercises = selectedDay ? workouts[selectedDay].exercises : [];
 
   const { isListening, isSupported, alwaysOn, isSpeaking, toggleListening } = useVoiceAssistant({
     onSelectDay: handleSelectDay,
@@ -142,7 +156,12 @@ export default function App() {
       <div className="max-w-4xl mx-auto">
         <Header streak={streak} showCelebration={showCelebration} />
 
-        {!selectedDay && <GoalsCard />}
+        {!selectedDay && (
+          <GoalsCard
+            goals={goals}
+            onEdit={() => setShowGoalsEditor(true)}
+          />
+        )}
 
         {!selectedDay ? (
           <DaySelector onSelectDay={handleSelectDay} weekCompletions={weekCompletions} />
@@ -150,13 +169,16 @@ export default function App() {
           <div>
             <DayHeader
               day={selectedDay}
+              workout={workouts[selectedDay]}
+              isCustomized={isCustomized(selectedDay)}
               onBack={handleBack}
+              onEdit={() => setShowWorkoutEditor(true)}
               dayDifficulty={dayDifficulty}
               onDifficultyChange={setDayDifficulty}
             />
 
             <ExerciseList
-              day={selectedDay}
+              exercises={workouts[selectedDay].exercises}
               expandedExercise={expandedExercise}
               onToggleExpand={setExpandedExercise}
               onStartTimer={startTimer}
@@ -188,6 +210,29 @@ export default function App() {
         isSpeaking={isSpeaking}
         onToggle={toggleListening}
       />
+
+      {/* Goals Editor Modal */}
+      {showGoalsEditor && (
+        <GoalsEditor
+          goals={goals}
+          defaultGoals={defaultGoals}
+          onSave={saveGoals}
+          onReset={resetGoals}
+          onClose={() => setShowGoalsEditor(false)}
+        />
+      )}
+
+      {/* Workout Editor Modal */}
+      {showWorkoutEditor && selectedDay && (
+        <WorkoutEditor
+          dayName={selectedDay}
+          workout={workouts[selectedDay]}
+          isCustomized={isCustomized(selectedDay)}
+          onSave={(exercises, title, color) => saveWorkout(selectedDay, exercises, title, color)}
+          onReset={() => resetDay(selectedDay)}
+          onClose={() => setShowWorkoutEditor(false)}
+        />
+      )}
     </div>
   );
 }

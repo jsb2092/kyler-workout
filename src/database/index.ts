@@ -1,5 +1,5 @@
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
-import type { DayName, WorkoutCompletion, DifficultyPreference, DifficultyLevel } from '../types';
+import type { DayName, WorkoutCompletion, DifficultyPreference, DifficultyLevel, CustomGoals, CustomWorkout } from '../types';
 
 interface WorkoutDB extends DBSchema {
   completions: {
@@ -18,10 +18,21 @@ interface WorkoutDB extends DBSchema {
       'by-day-exercise': string;
     };
   };
+  customGoals: {
+    key: number;
+    value: CustomGoals;
+  };
+  customWorkouts: {
+    key: number;
+    value: CustomWorkout;
+    indexes: {
+      'by-day': DayName;
+    };
+  };
 }
 
 const DB_NAME = 'kyler-workout-db';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 let dbPromise: Promise<IDBPDatabase<WorkoutDB>> | null = null;
 
@@ -44,6 +55,17 @@ export async function initDatabase(): Promise<IDBPDatabase<WorkoutDB>> {
           });
           prefStore.createIndex('by-day', 'dayName');
           prefStore.createIndex('by-day-exercise', ['dayName', 'exerciseId']);
+        }
+        if (oldVersion < 3) {
+          db.createObjectStore('customGoals', {
+            keyPath: 'id',
+            autoIncrement: true,
+          });
+          const workoutStore = db.createObjectStore('customWorkouts', {
+            keyPath: 'id',
+            autoIncrement: true,
+          });
+          workoutStore.createIndex('by-day', 'dayName');
         }
       },
     });
@@ -167,11 +189,15 @@ export async function getLastWorkoutDate(): Promise<string | null> {
 export async function exportData(): Promise<string> {
   const db = await initDatabase();
   const completions = await db.getAll('completions');
+  const customGoals = await db.getAll('customGoals');
+  const customWorkouts = await db.getAll('customWorkouts');
 
   const exportObj = {
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
-    completions: completions.map(({ id, ...rest }) => rest), // Remove auto-generated IDs
+    completions: completions.map(({ id, ...rest }) => rest),
+    customGoals: customGoals.length > 0 ? customGoals[0]?.goals : null,
+    customWorkouts: customWorkouts.map(({ id, ...rest }) => rest),
   };
 
   return JSON.stringify(exportObj, null, 2);
@@ -190,6 +216,8 @@ export async function importData(jsonString: string): Promise<{ success: boolean
 
     // Clear existing data
     await db.clear('completions');
+    await db.clear('customGoals');
+    await db.clear('customWorkouts');
 
     // Import all completions
     let imported = 0;
@@ -205,6 +233,29 @@ export async function importData(jsonString: string): Promise<{ success: boolean
       }
     }
 
+    // Import custom goals (version 2+)
+    if (data.customGoals && Array.isArray(data.customGoals)) {
+      await db.add('customGoals', {
+        goals: data.customGoals,
+        updatedAt: new Date().toISOString(),
+      });
+    }
+
+    // Import custom workouts (version 2+)
+    if (data.customWorkouts && Array.isArray(data.customWorkouts)) {
+      for (const workout of data.customWorkouts) {
+        if (workout.dayName && workout.exercises) {
+          await db.add('customWorkouts', {
+            dayName: workout.dayName,
+            title: workout.title,
+            color: workout.color,
+            exercises: workout.exercises,
+            updatedAt: workout.updatedAt || new Date().toISOString(),
+          });
+        }
+      }
+    }
+
     return { success: true, imported };
   } catch (e) {
     return { success: false, imported: 0, error: 'Failed to parse JSON' };
@@ -216,6 +267,8 @@ export async function clearAllData(): Promise<void> {
   const db = await initDatabase();
   await db.clear('completions');
   await db.clear('difficultyPreferences');
+  await db.clear('customGoals');
+  await db.clear('customWorkouts');
 }
 
 // Get day-level difficulty preference
@@ -292,4 +345,88 @@ export async function resetDayDifficulties(dayName: DayName): Promise<void> {
       await db.delete('difficultyPreferences', pref.id);
     }
   }
+}
+
+// ==================== Custom Goals ====================
+
+export async function getCustomGoals(): Promise<string[] | null> {
+  const db = await initDatabase();
+  const all = await db.getAll('customGoals');
+  if (all.length === 0) return null;
+  return all[0]?.goals ?? null;
+}
+
+export async function saveCustomGoals(goals: string[]): Promise<void> {
+  const db = await initDatabase();
+  const all = await db.getAll('customGoals');
+
+  if (all.length > 0 && all[0]?.id) {
+    await db.put('customGoals', {
+      id: all[0].id,
+      goals,
+      updatedAt: new Date().toISOString(),
+    });
+  } else {
+    await db.add('customGoals', {
+      goals,
+      updatedAt: new Date().toISOString(),
+    });
+  }
+}
+
+export async function resetCustomGoals(): Promise<void> {
+  const db = await initDatabase();
+  await db.clear('customGoals');
+}
+
+// ==================== Custom Workouts ====================
+
+export async function getCustomWorkout(dayName: DayName): Promise<CustomWorkout | null> {
+  const db = await initDatabase();
+  const all = await db.getAllFromIndex('customWorkouts', 'by-day', dayName);
+  return all[0] ?? null;
+}
+
+export async function getAllCustomWorkouts(): Promise<Map<DayName, CustomWorkout>> {
+  const db = await initDatabase();
+  const all = await db.getAll('customWorkouts');
+  const map = new Map<DayName, CustomWorkout>();
+  for (const workout of all) {
+    map.set(workout.dayName, workout);
+  }
+  return map;
+}
+
+export async function saveCustomWorkout(workout: Omit<CustomWorkout, 'id' | 'updatedAt'> & { id?: number }): Promise<void> {
+  const db = await initDatabase();
+  const existing = await db.getAllFromIndex('customWorkouts', 'by-day', workout.dayName);
+
+  if (existing.length > 0 && existing[0]?.id) {
+    await db.put('customWorkouts', {
+      ...workout,
+      id: existing[0].id,
+      updatedAt: new Date().toISOString(),
+    });
+  } else {
+    await db.add('customWorkouts', {
+      ...workout,
+      updatedAt: new Date().toISOString(),
+    });
+  }
+}
+
+export async function resetCustomWorkout(dayName: DayName): Promise<void> {
+  const db = await initDatabase();
+  const all = await db.getAllFromIndex('customWorkouts', 'by-day', dayName);
+  for (const workout of all) {
+    if (workout.id) {
+      await db.delete('customWorkouts', workout.id);
+    }
+  }
+}
+
+export async function resetAllCustomizations(): Promise<void> {
+  const db = await initDatabase();
+  await db.clear('customGoals');
+  await db.clear('customWorkouts');
 }

@@ -1,9 +1,8 @@
-import { workoutData } from '../data/workouts';
 import { ExerciseCard } from './ExerciseCard';
-import type { DayName, Exercise, ExerciseVariant, DifficultyLevel } from '../types';
+import type { Exercise, ExerciseVariant, DifficultyLevel } from '../types';
 
 interface ExerciseListProps {
-  day: DayName;
+  exercises: Exercise[];
   expandedExercise: number | null;
   onToggleExpand: (index: number | null) => void;
   onStartTimer: (exercise: Exercise, type: 'warmup' | 'cooldown') => void;
@@ -15,7 +14,7 @@ interface ExerciseListProps {
 }
 
 export function ExerciseList({
-  day,
+  exercises,
   expandedExercise,
   onToggleExpand,
   onStartTimer,
@@ -25,11 +24,10 @@ export function ExerciseList({
   getEffectiveExercise,
   onExerciseDifficultyChange,
 }: ExerciseListProps) {
-  const workout = workoutData[day];
 
   return (
     <div className="space-y-4">
-      {workout.exercises.map((exercise, index) =>
+      {exercises.map((exercise, index) =>
         exercise.category ? (
           <div key={exercise.id} className="pt-4 first:pt-0">
             <h3 className="text-lg font-bold text-slate-300 border-b border-slate-600 pb-2 mb-2">

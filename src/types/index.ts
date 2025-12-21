@@ -58,3 +58,19 @@ export interface TimerData {
 }
 
 export type TimerType = 'warmup' | 'cooldown' | 'exercise';
+
+// Custom workout types for user customization
+export interface CustomGoals {
+  id?: number;
+  goals: string[];
+  updatedAt: string;
+}
+
+export interface CustomWorkout {
+  id?: number;
+  dayName: DayName;
+  title?: string;
+  color?: string;
+  exercises: Exercise[];
+  updatedAt: string;
+}
