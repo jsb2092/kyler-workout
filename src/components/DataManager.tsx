@@ -120,8 +120,7 @@ export function DataManager({ onDataChange, selectedVoice, onVoiceChange, sassyE
 
   const handleSassyToggleClick = () => {
     if (sassyEnabled) {
-      // Trying to disable - show code prompt
-      onRequestSassyCode(); // Generate new code
+      // Trying to disable - show code prompt (use existing code, don't regenerate)
       setShowSassyCodePrompt(true);
       setCodeInput('');
       setCodeError(false);
@@ -137,9 +136,17 @@ export function DataManager({ onDataChange, selectedVoice, onVoiceChange, sassyE
       setShowSassyCodePrompt(false);
       setCodeInput('');
       setCodeError(false);
+      onRequestSassyCode(); // Generate new code for next time
     } else {
       setCodeError(true);
     }
+  };
+
+  const handleCodeCancel = () => {
+    setShowSassyCodePrompt(false);
+    setCodeInput('');
+    setCodeError(false);
+    onRequestSassyCode(); // Generate new code for next attempt
   };
 
   if (!isOpen) {
@@ -323,7 +330,7 @@ export function DataManager({ onDataChange, selectedVoice, onVoiceChange, sassyE
                   Submit
                 </button>
                 <button
-                  onClick={() => setShowSassyCodePrompt(false)}
+                  onClick={handleCodeCancel}
                   className="flex-1 bg-slate-600 hover:bg-slate-500 text-white py-2 px-4 rounded-lg font-semibold"
                 >
                   Cancel
@@ -334,7 +341,7 @@ export function DataManager({ onDataChange, selectedVoice, onVoiceChange, sassyE
         )}
 
         <div className="mt-6 pt-4 border-t border-slate-700 text-center">
-          <p className="text-xs text-slate-500">Version 1.2.11</p>
+          <p className="text-xs text-slate-500">Version 1.2.12</p>
         </div>
       </div>
     </div>
