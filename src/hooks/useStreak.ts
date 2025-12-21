@@ -15,9 +15,7 @@ export function useStreak() {
 
   const checkCompletedToday = useCallback(async (day: DayName) => {
     const completed = await wasCompletedToday(day);
-    if (completed) {
-      setCompletedToday(day);
-    }
+    setCompletedToday(completed ? day : null);
     return completed;
   }, []);
 

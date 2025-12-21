@@ -93,7 +93,7 @@ export default function App() {
   // Get current day's exercises for voice assistant
   const currentExercises = selectedDay ? workoutData[selectedDay].exercises : [];
 
-  const { isListening, isSupported, lastCommand, debugInfo, toggleListening } = useVoiceAssistant({
+  const { isListening, isSupported, lastCommand, toggleListening } = useVoiceAssistant({
     onSelectDay: handleSelectDay,
     onBack: handleBack,
     onStartWarmup: handleVoiceStartWarmup,
@@ -181,7 +181,6 @@ export default function App() {
         isListening={isListening}
         isSupported={isSupported}
         lastCommand={lastCommand}
-        debugInfo={debugInfo}
         onToggle={toggleListening}
       />
     </div>
