@@ -170,7 +170,7 @@ export function useVoiceAssistant(actions: VoiceActions) {
     setIsSpeaking(true);
 
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 1.0;
+    utterance.rate = 1.1;
     utterance.pitch = 1.05;
     utterance.volume = 1.0;
     utterance.lang = 'en-US';
