@@ -153,7 +153,7 @@ export default function App() {
   // Get current day's exercises for voice assistant
   const currentExercises = selectedDay ? workouts[selectedDay].exercises : [];
 
-  const { isListening, isSupported, alwaysOn, isSpeaking, toggleListening } = useVoiceAssistant({
+  const { isListening, isSupported, alwaysOn, isSpeaking, lastCommand, toggleListening } = useVoiceAssistant({
     onSelectDay: handleSelectDay,
     onBack: handleBack,
     onStartWarmup: handleVoiceStartWarmup,
@@ -270,6 +270,17 @@ export default function App() {
           assistantName={assistantName}
           onAssistantNameChange={handleAssistantNameChange}
         />
+
+      {/* Voice Debug Panel */}
+      {lastCommand && (
+        <div className="fixed bottom-20 left-4 right-4 bg-slate-800/95 backdrop-blur border border-slate-600 rounded-xl p-3 text-sm z-40">
+          <div className="text-slate-400 text-xs mb-1">Last heard:</div>
+          <div className="text-white font-mono break-words">{lastCommand}</div>
+          <div className="text-slate-500 text-xs mt-2">
+            Looking for: "{assistantName.toLowerCase()}" prefix
+          </div>
+        </div>
+      )}
 
       <VoiceButton
         isListening={isListening}
