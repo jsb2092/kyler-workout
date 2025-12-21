@@ -21,9 +21,9 @@ export function VoiceButton({ isListening, isSupported, lastCommand, debugInfo, 
   }
 
   return (
-    <div className="fixed bottom-10 left-4 right-4 z-40 flex flex-col items-end gap-2 safe-area-bottom">
+    <div className="fixed bottom-24 left-4 right-4 z-40 flex flex-col items-end gap-2 pointer-events-none">
       {debugInfo && (
-        <div className="bg-slate-900 border border-yellow-500/50 rounded-lg px-3 py-2 text-xs text-slate-300 w-full animate-fade-in font-mono">
+        <div className="pointer-events-auto bg-slate-900 border border-yellow-500/50 rounded-lg px-3 py-2 text-xs text-slate-300 w-full animate-fade-in font-mono">
           <div className="flex items-center gap-2 text-yellow-400 mb-1">
             <Bug className="w-3 h-3" />
             <span>Debug Info</span>
@@ -40,7 +40,7 @@ export function VoiceButton({ isListening, isSupported, lastCommand, debugInfo, 
         </div>
       )}
       {lastCommand && !debugInfo && (
-        <div className="bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-300 max-w-[250px] animate-fade-in">
+        <div className="pointer-events-auto bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-300 max-w-[250px] animate-fade-in">
           <div className="flex items-center gap-2">
             <Volume2 className="w-4 h-4 text-blue-400 flex-shrink-0" />
             <span>"{lastCommand}"</span>
@@ -49,13 +49,13 @@ export function VoiceButton({ isListening, isSupported, lastCommand, debugInfo, 
       )}
       <div className="flex justify-end w-full">
         {isListening && (
-          <div className="bg-red-500/20 border border-red-500/50 rounded-lg px-3 py-2 text-sm text-red-300 animate-pulse mr-2">
+          <div className="pointer-events-auto bg-red-500/20 border border-red-500/50 rounded-lg px-3 py-2 text-sm text-red-300 animate-pulse mr-2">
             Listening... speak now
           </div>
         )}
         <button
           onClick={onToggle}
-          className={`p-4 rounded-full shadow-lg transition-all transform hover:scale-110 ${
+          className={`pointer-events-auto p-4 rounded-full shadow-lg transition-all transform hover:scale-110 ${
             isListening
               ? 'bg-red-500 hover:bg-red-600 animate-pulse'
               : 'bg-blue-500 hover:bg-blue-600'
