@@ -83,20 +83,59 @@ export async function wasCompletedToday(dayName: DayName): Promise<boolean> {
   return completions.some(c => c.dayName === dayName);
 }
 
-export async function calculateStreak(): Promise<number> {
+// JS day mapping: 0=Sun, 1=Mon, ..., 6=Sat
+const JS_DAY_NAMES: DayName[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
+// Get today's day name
+export function getTodayDayName(): DayName {
+  return JS_DAY_NAMES[new Date().getDay()]!;
+}
+
+// Get the most recent date for a given day of the week
+// If that day is today, returns today. Otherwise returns the most recent past occurrence.
+function getMostRecentDateForDay(dayName: DayName): string {
+  const today = new Date();
+  const todayDayIndex = today.getDay();
+  const targetDayIndex = JS_DAY_NAMES.indexOf(dayName);
+
+  let daysAgo = todayDayIndex - targetDayIndex;
+  if (daysAgo < 0) {
+    daysAgo += 7; // wrap around to previous week
+  }
+
+  const targetDate = new Date(today);
+  targetDate.setDate(today.getDate() - daysAgo);
+
+  return targetDate.toISOString().split('T')[0]!;
+}
+
+// Get all days completed in the past week (each day on its most recent occurrence)
+export async function getWeekCompletions(): Promise<Set<DayName>> {
   const db = await initDatabase();
-  const all = await db.getAllFromIndex('completions', 'by-date');
+  const all = await db.getAll('completions');
+  const completed = new Set<DayName>();
 
-  if (all.length === 0) return 0;
+  for (const dayName of JS_DAY_NAMES) {
+    const expectedDate = getMostRecentDateForDay(dayName);
+    const wasCompleted = all.some(c => c.dayName === dayName && c.completedDate === expectedDate);
+    if (wasCompleted) {
+      completed.add(dayName);
+    }
+  }
 
-  // Days in weekly order
+  return completed;
+}
+
+export async function calculateStreak(): Promise<number> {
+  // Get this week's completions (same logic as getWeekCompletions)
+  const completedDays = await getWeekCompletions();
+
+  if (completedDays.size === 0) return 0;
+
+  // Days in display order (Mon-Sun)
   const dayOrder: DayName[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
-  // Get all unique days that have been completed
-  const completedDays = new Set(all.map(c => c.dayName));
-
   // Find the longest consecutive streak in the week
-  // Start from each completed day and count consecutive days forward
   let maxStreak = 0;
 
   for (let startIdx = 0; startIdx < 7; startIdx++) {

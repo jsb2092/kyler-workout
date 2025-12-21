@@ -22,7 +22,7 @@ export default function App() {
   const [expandedExercise, setExpandedExercise] = useState<number | null>(null);
 
   const { isReady } = useDatabase();
-  const { streak, showCelebration, completedToday, completeWorkout, checkCompletedToday, refreshStreak } = useStreak();
+  const { streak, showCelebration, completedToday, weekCompletions, completeWorkout, checkCompletedToday, refreshStreak } = useStreak();
   const {
     dayDifficulty,
     setDayDifficulty,
@@ -141,7 +141,7 @@ export default function App() {
         {!selectedDay && <GoalsCard />}
 
         {!selectedDay ? (
-          <DaySelector onSelectDay={handleSelectDay} />
+          <DaySelector onSelectDay={handleSelectDay} weekCompletions={weekCompletions} />
         ) : (
           <div>
             <DayHeader
