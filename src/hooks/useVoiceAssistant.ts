@@ -182,14 +182,28 @@ export function useVoiceAssistant(actions: VoiceActions) {
       utterance.voice = englishUSVoice || englishVoice || voices[0] || null;
     }
 
-    // Resume listening after speech ends
-    utterance.onend = () => {
-      setIsSpeaking(false);
+    // Track if we've already reset speaking state
+    let hasEnded = false;
+    const resetSpeaking = () => {
+      if (!hasEnded) {
+        hasEnded = true;
+        setIsSpeaking(false);
+      }
     };
 
-    utterance.onerror = () => {
-      setIsSpeaking(false);
-    };
+    // Resume listening after speech ends
+    utterance.onend = resetSpeaking;
+    utterance.onerror = resetSpeaking;
+
+    // Fallback timeout in case onend doesn't fire (common on mobile)
+    // Estimate speech duration: ~100ms per character + 2 seconds buffer
+    const estimatedDuration = Math.max(text.length * 100 + 2000, 3000);
+    setTimeout(() => {
+      // Check if speech synthesis is actually still speaking
+      if (!window.speechSynthesis.speaking) {
+        resetSpeaking();
+      }
+    }, estimatedDuration);
 
     // iOS workaround: add small delay and use speechSynthesis directly
     setTimeout(() => {
