@@ -133,18 +133,30 @@ export function getMostRecentDateForDay(dayName: DayName): string {
   return targetDate.toISOString().split('T')[0]!;
 }
 
-// Get all days completed in the past week (each day on its most recent occurrence)
+// Get all days completed in the current week cycle
+// When all 7 days are complete, resets to empty so user can start a new week
 export async function getWeekCompletions(): Promise<Set<DayName>> {
   const db = await initDatabase();
   const all = await db.getAll('completions');
   const completed = new Set<DayName>();
 
+  // Build a map of each day's most recent expected date and whether it was completed
+  const weekDates: Record<string, string> = {};
   for (const dayName of JS_DAY_NAMES) {
-    const expectedDate = getMostRecentDateForDay(dayName);
+    weekDates[dayName] = getMostRecentDateForDay(dayName);
+  }
+
+  for (const dayName of JS_DAY_NAMES) {
+    const expectedDate = weekDates[dayName];
     const wasCompleted = all.some(c => c.dayName === dayName && c.completedDate === expectedDate);
     if (wasCompleted) {
       completed.add(dayName);
     }
+  }
+
+  // If all 7 days are complete, reset for a new week cycle
+  if (completed.size === 7) {
+    return new Set<DayName>();
   }
 
   return completed;

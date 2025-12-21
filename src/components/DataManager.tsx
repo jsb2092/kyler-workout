@@ -343,7 +343,7 @@ export function DataManager({
         </div>
 
         <div className="mt-6 pt-4 border-t border-theme-border text-center">
-          <p className="text-xs text-theme-text-muted">Version 1.3.1</p>
+          <p className="text-xs text-theme-text-muted">Version 1.3.2</p>
         </div>
       </div>
     </div>
