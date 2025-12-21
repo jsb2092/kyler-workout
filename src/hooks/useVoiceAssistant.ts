@@ -44,6 +44,7 @@ interface VoiceActions {
   completedToday: DayName | null;
   exercises: Exercise[];
   selectedVoice: string | null;
+  enabled: boolean;
 }
 
 // Map ordinal words to numbers
@@ -617,30 +618,37 @@ export function useVoiceAssistant(actions: VoiceActions) {
     }
   }, [isListening, startListening, stopListening]);
 
-  // Auto-start listening when component mounts (if supported)
+  // Stop listening when disabled (e.g., K-Bot ban)
   useEffect(() => {
-    if (isSupported && alwaysOn && !isListening && !isSpeaking) {
+    if (!actions.enabled && isListening) {
+      stopListening();
+    }
+  }, [actions.enabled, isListening, stopListening]);
+
+  // Auto-start listening when component mounts (if supported and enabled)
+  useEffect(() => {
+    if (actions.enabled && isSupported && alwaysOn && !isListening && !isSpeaking) {
       // Small delay to ensure everything is initialized
       const timer = setTimeout(() => {
-        if (shouldRestartRef.current) {
+        if (shouldRestartRef.current && actions.enabled) {
           startListening();
         }
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [isSupported, alwaysOn, isListening, isSpeaking, startListening]);
+  }, [actions.enabled, isSupported, alwaysOn, isListening, isSpeaking, startListening]);
 
-  // Restart listening after speaking ends
+  // Restart listening after speaking ends (if enabled)
   useEffect(() => {
-    if (!isSpeaking && alwaysOn && !isListening && shouldRestartRef.current) {
+    if (actions.enabled && !isSpeaking && alwaysOn && !isListening && shouldRestartRef.current) {
       const timer = setTimeout(() => {
-        if (shouldRestartRef.current && !isSpeaking) {
+        if (shouldRestartRef.current && !isSpeaking && actions.enabled) {
           startListening();
         }
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [isSpeaking, alwaysOn, isListening, startListening]);
+  }, [actions.enabled, isSpeaking, alwaysOn, isListening, startListening]);
 
   return {
     isListening,

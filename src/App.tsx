@@ -160,6 +160,7 @@ export default function App() {
     completedToday,
     exercises: currentExercises,
     selectedVoice,
+    enabled: banTimeLeft === 0,
   });
 
   if (!isReady) {
