@@ -501,7 +501,19 @@ export function useVoiceAssistant(actions: VoiceActions) {
     }
 
     if (command.includes('go away') || command.includes('leave me alone')) {
-      speak("Alright, alright, I can take a hint. Good luck with your workout... you'll need it!");
+      // Randomly choose between sassy response or 1-minute ban
+      if (Math.random() > 0.5) {
+        speak("Alright, alright, I can take a hint. Good luck with your workout... you'll need it!");
+      } else {
+        speak("Fine! See you in one minute!");
+        // Set a 1-minute ban in localStorage
+        const banUntil = Date.now() + 60000; // 1 minute from now
+        localStorage.setItem('kbot-ban-until', banUntil.toString());
+        setTimeout(() => {
+          window.close();
+          window.location.href = 'about:blank';
+        }, 2500);
+      }
       return true;
     }
 
