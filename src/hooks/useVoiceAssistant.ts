@@ -478,6 +478,33 @@ export function useVoiceAssistant(actions: VoiceActions) {
       return true;
     }
 
+    // Attitude responses - K-Bot has sass!
+    if (command.includes('shut up') || command.includes('be quiet') || command.includes('stop talking')) {
+      speak("Fine! I'll just leave then!");
+      // Close the app after speaking
+      setTimeout(() => {
+        window.close();
+        // If window.close doesn't work (most browsers block it), navigate away
+        window.location.href = 'about:blank';
+      }, 2000);
+      return true;
+    }
+
+    if (command.includes('you suck') || command.includes('you stink') || command.includes('hate you')) {
+      speak("Wow, rude! And here I thought we were workout buddies. Maybe do some extra reps to work off that attitude!");
+      return true;
+    }
+
+    if (command.includes('you\'re annoying') || command.includes('youre annoying') || command.includes('so annoying')) {
+      speak("Annoying? I'm just trying to help you get fit! But fine, I'll try to be less... helpful.");
+      return true;
+    }
+
+    if (command.includes('go away') || command.includes('leave me alone')) {
+      speak("Alright, alright, I can take a hint. Good luck with your workout... you'll need it!");
+      return true;
+    }
+
     // Greeting
     if (command.includes('hello') || command.includes('hi') || command.includes('hey')) {
       speak(`Hey there! I'm ${ASSISTANT_NAME}, ready to help with your workout. What can I do for you?`);
