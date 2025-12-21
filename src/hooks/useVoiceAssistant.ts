@@ -48,16 +48,16 @@ interface VoiceActions {
   assistantName: string;
 }
 
-// Map ordinal words to numbers
+// Map ordinal words to numbers (includes common speech recognition mishearings)
 const ORDINAL_MAP: Record<string, number> = {
-  'first': 1, '1st': 1,
-  'second': 2, '2nd': 2,
-  'third': 3, '3rd': 3,
-  'fourth': 4, '4th': 4,
-  'fifth': 5, '5th': 5,
+  'first': 1, '1st': 1, 'fist': 1, 'fest': 1,
+  'second': 2, '2nd': 2, 'sec': 2,
+  'third': 3, '3rd': 3, 'thurd': 3,
+  'fourth': 4, '4th': 4, 'forth': 4,
+  'fifth': 5, '5th': 5, 'fith': 5,
   'sixth': 6, '6th': 6,
   'seventh': 7, '7th': 7,
-  'eighth': 8, '8th': 8,
+  'eighth': 8, '8th': 8, 'eight': 8,
   'ninth': 9, '9th': 9,
   'tenth': 10, '10th': 10,
   'next': -1, // special case
