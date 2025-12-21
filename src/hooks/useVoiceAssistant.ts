@@ -92,8 +92,11 @@ export function useVoiceAssistant(actions: VoiceActions) {
   const [isSupported, setIsSupported] = useState(false);
   const [lastCommand, setLastCommand] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
+  const [alwaysOn, setAlwaysOn] = useState(true); // Always-on listening mode
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
+  const shouldRestartRef = useRef(true); // Track if we should auto-restart
 
   // Check for browser support
   useEffect(() => {
@@ -121,6 +124,12 @@ export function useVoiceAssistant(actions: VoiceActions) {
     // Cancel any ongoing speech
     synthRef.current.cancel();
 
+    // Pause listening while speaking to avoid hearing ourselves
+    if (recognitionRef.current && isListening) {
+      recognitionRef.current.stop();
+    }
+    setIsSpeaking(true);
+
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 0.9;
     utterance.pitch = 1.0;
@@ -136,11 +145,20 @@ export function useVoiceAssistant(actions: VoiceActions) {
       utterance.voice = englishUSVoice || englishVoice || voices[0] || null;
     }
 
+    // Resume listening after speech ends
+    utterance.onend = () => {
+      setIsSpeaking(false);
+    };
+
+    utterance.onerror = () => {
+      setIsSpeaking(false);
+    };
+
     // iOS workaround: add small delay and use speechSynthesis directly
     setTimeout(() => {
       window.speechSynthesis.speak(utterance);
     }, 100);
-  }, []);
+  }, [isListening]);
 
   const processCommand = useCallback((transcript: string) => {
     let command = transcript.toLowerCase().trim();
@@ -371,6 +389,7 @@ export function useVoiceAssistant(actions: VoiceActions) {
 
   const startListening = useCallback(() => {
     if (!isSupported) return;
+    if (recognitionRef.current) return; // Already listening
 
     const SpeechRecognitionAPI = (window as WindowWithSpeechRecognition).SpeechRecognition ||
                                   (window as WindowWithSpeechRecognition).webkitSpeechRecognition;
@@ -384,7 +403,7 @@ export function useVoiceAssistant(actions: VoiceActions) {
     }
 
     const recognition = new SpeechRecognitionAPI();
-    recognition.continuous = false;
+    recognition.continuous = true; // Keep listening continuously
     recognition.interimResults = false;
     recognition.lang = 'en-US';
 
@@ -393,8 +412,10 @@ export function useVoiceAssistant(actions: VoiceActions) {
     };
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
-      const result = event.results[0];
-      if (result && result[0]) {
+      // Get the latest result (continuous mode can have multiple)
+      const lastResultIndex = event.results.length - 1;
+      const result = event.results[lastResultIndex];
+      if (result && result[0] && result.isFinal) {
         const transcript = result[0].transcript;
         processCommand(transcript);
       }
@@ -402,40 +423,91 @@ export function useVoiceAssistant(actions: VoiceActions) {
 
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
       console.error('Speech recognition error:', event.error);
-      setIsListening(false);
+      // Don't set isListening to false for no-speech errors in always-on mode
       if (event.error === 'not-allowed') {
+        setIsListening(false);
+        shouldRestartRef.current = false;
         speak('Microphone access denied. Please enable microphone permissions.');
+      } else if (event.error === 'no-speech' || event.error === 'aborted') {
+        // These are normal in always-on mode, will auto-restart
+      } else {
+        setIsListening(false);
       }
     };
 
     recognition.onend = () => {
       setIsListening(false);
+      recognitionRef.current = null;
+      // Auto-restart if in always-on mode and should restart
+      if (alwaysOn && shouldRestartRef.current && !isSpeaking) {
+        setTimeout(() => {
+          if (shouldRestartRef.current && !isSpeaking) {
+            startListening();
+          }
+        }, 300); // Small delay before restarting
+      }
     };
 
     recognitionRef.current = recognition;
-    recognition.start();
-  }, [isSupported, processCommand, speak]);
+    try {
+      recognition.start();
+    } catch (err) {
+      console.error('Failed to start recognition:', err);
+    }
+  }, [isSupported, processCommand, speak, alwaysOn, isSpeaking]);
 
   const stopListening = useCallback(() => {
+    shouldRestartRef.current = false; // Prevent auto-restart
     if (recognitionRef.current) {
       recognitionRef.current.stop();
+      recognitionRef.current = null;
       setIsListening(false);
     }
   }, []);
 
   const toggleListening = useCallback(() => {
     if (isListening) {
+      setAlwaysOn(false);
       stopListening();
     } else {
+      setAlwaysOn(true);
+      shouldRestartRef.current = true;
       startListening();
     }
   }, [isListening, startListening, stopListening]);
+
+  // Auto-start listening when component mounts (if supported)
+  useEffect(() => {
+    if (isSupported && alwaysOn && !isListening && !isSpeaking) {
+      // Small delay to ensure everything is initialized
+      const timer = setTimeout(() => {
+        if (shouldRestartRef.current) {
+          startListening();
+        }
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isSupported, alwaysOn, isListening, isSpeaking, startListening]);
+
+  // Restart listening after speaking ends
+  useEffect(() => {
+    if (!isSpeaking && alwaysOn && !isListening && shouldRestartRef.current) {
+      const timer = setTimeout(() => {
+        if (shouldRestartRef.current && !isSpeaking) {
+          startListening();
+        }
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isSpeaking, alwaysOn, isListening, startListening]);
 
   return {
     isListening,
     isSupported,
     lastCommand,
     debugInfo,
+    alwaysOn,
+    isSpeaking,
     startListening,
     stopListening,
     toggleListening,

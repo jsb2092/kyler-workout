@@ -14,6 +14,7 @@ import { useStreak } from './hooks/useStreak';
 import { useTimer } from './hooks/useTimer';
 import { useVoiceAssistant } from './hooks/useVoiceAssistant';
 import { useDifficulty } from './hooks/useDifficulty';
+import { useWakeLock } from './hooks/useWakeLock';
 import { workoutData } from './data/workouts';
 import type { DayName } from './types';
 
@@ -23,6 +24,9 @@ export default function App() {
 
   const { isReady } = useDatabase();
   const { streak, showCelebration, completedToday, weekCompletions, completeWorkout, checkCompletedToday, refreshStreak } = useStreak();
+
+  // Keep screen on while app is active
+  useWakeLock();
   const {
     dayDifficulty,
     setDayDifficulty,
@@ -93,7 +97,7 @@ export default function App() {
   // Get current day's exercises for voice assistant
   const currentExercises = selectedDay ? workoutData[selectedDay].exercises : [];
 
-  const { isListening, isSupported, lastCommand, toggleListening } = useVoiceAssistant({
+  const { isListening, isSupported, alwaysOn, isSpeaking, toggleListening } = useVoiceAssistant({
     onSelectDay: handleSelectDay,
     onBack: handleBack,
     onStartWarmup: handleVoiceStartWarmup,
@@ -180,7 +184,8 @@ export default function App() {
       <VoiceButton
         isListening={isListening}
         isSupported={isSupported}
-        lastCommand={lastCommand}
+        alwaysOn={alwaysOn}
+        isSpeaking={isSpeaking}
         onToggle={toggleListening}
       />
     </div>
