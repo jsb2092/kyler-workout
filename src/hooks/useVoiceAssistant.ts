@@ -137,6 +137,10 @@ export function useVoiceAssistant(actions: VoiceActions) {
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
   const shouldRestartRef = useRef(true); // Track if we should auto-restart
+  const actionsRef = useRef(actions); // Keep latest actions for stale closure fix
+
+  // Always keep actionsRef up to date
+  actionsRef.current = actions;
 
   // Check for browser support
   useEffect(() => {
@@ -182,9 +186,10 @@ export function useVoiceAssistant(actions: VoiceActions) {
     if (voices.length > 0) {
       let voiceToUse = null;
 
-      // If user selected a specific voice, use that
-      if (actions.selectedVoice) {
-        voiceToUse = voices.find(v => v.name === actions.selectedVoice);
+      // If user selected a specific voice, use that (use ref to avoid stale closure)
+      const selectedVoice = actionsRef.current.selectedVoice;
+      if (selectedVoice) {
+        voiceToUse = voices.find(v => v.name === selectedVoice);
       }
 
       // Otherwise, auto-select the best available voice
@@ -262,9 +267,12 @@ export function useVoiceAssistant(actions: VoiceActions) {
       }
       synth.speak(utterance);
     }, 50);
-  }, [isListening, actions.selectedVoice]);
+  }, [isListening]);
 
   const processCommand = useCallback((transcript: string) => {
+    // Use ref to get latest actions (fixes stale closure issue)
+    const actions = actionsRef.current;
+
     let command = transcript.toLowerCase().trim();
     setLastCommand(command);
 
@@ -552,7 +560,7 @@ export function useVoiceAssistant(actions: VoiceActions) {
     // Command not recognized
     speak(`Sorry, I didn't catch that. Say "help" to hear what I can do!`);
     return false;
-  }, [actions, speak]);
+  }, [speak]);
 
   const startListening = useCallback(() => {
     if (!isSupported) return;
