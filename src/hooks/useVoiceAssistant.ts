@@ -67,6 +67,43 @@ function getOrdinalSuffix(n: number): string {
   return n + (s[(v - 20) % 10] || s[v] || s[0] || 'th');
 }
 
+// Convert "3 × 10-15" to "3 sets of 10 to 15 reps"
+function formatSetsForSpeech(sets: string): string {
+  // Match patterns like "3 × 10-15", "3 x 10", "3 × 20-30 sec"
+  const match = sets.match(/(\d+)\s*[×x]\s*(\d+)(?:-(\d+))?\s*(sec|seconds|min|minutes)?/i);
+
+  if (match) {
+    const numSets = match[1];
+    const repsStart = match[2];
+    const repsEnd = match[3];
+    const unit = match[4];
+
+    let result = `${numSets} sets of `;
+
+    if (repsEnd) {
+      result += `${repsStart} to ${repsEnd}`;
+    } else {
+      result += repsStart;
+    }
+
+    if (unit) {
+      // Normalize the unit
+      if (unit.toLowerCase().startsWith('sec')) {
+        result += ' seconds';
+      } else if (unit.toLowerCase().startsWith('min')) {
+        result += ' minutes';
+      }
+    } else {
+      result += ' reps';
+    }
+
+    return result;
+  }
+
+  // If pattern doesn't match, return as-is
+  return sets;
+}
+
 const DAY_KEYWORDS: Record<string, DayName> = {
   'monday': 'monday',
   'tuesday': 'tuesday',
@@ -239,7 +276,7 @@ export function useVoiceAssistant(actions: VoiceActions) {
 
           let response = `Your ${position} exercise is ${exercise.name}.`;
           if (exercise.sets) {
-            response += ` Do ${exercise.sets}.`;
+            response += ` Do ${formatSetsForSpeech(exercise.sets)}.`;
           } else if (exercise.duration) {
             response += ` Duration: ${exercise.duration}.`;
           }
