@@ -134,26 +134,20 @@ export async function calculateStreak(): Promise<number> {
 
   if (completedDays.size === 0) return 0;
 
-  // Days in display order (Mon-Sun)
-  const dayOrder: DayName[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+  // Days in chronological order for the week (Sun is last Sunday, Sat is today if today is Saturday)
+  const chronologicalOrder: DayName[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
-  // Find the longest consecutive streak in the week
+  // Find the longest consecutive streak in the week (no wrapping - Sunday doesn't connect to Saturday)
   let maxStreak = 0;
+  let currentStreak = 0;
 
-  for (let startIdx = 0; startIdx < 7; startIdx++) {
-    if (!completedDays.has(dayOrder[startIdx]!)) continue;
-
-    let streak = 0;
-    for (let i = 0; i < 7; i++) {
-      const dayIdx = (startIdx + i) % 7;
-      const day = dayOrder[dayIdx]!;
-      if (completedDays.has(day)) {
-        streak++;
-      } else {
-        break;
-      }
+  for (const day of chronologicalOrder) {
+    if (completedDays.has(day)) {
+      currentStreak++;
+      maxStreak = Math.max(maxStreak, currentStreak);
+    } else {
+      currentStreak = 0;
     }
-    maxStreak = Math.max(maxStreak, streak);
   }
 
   return maxStreak;
