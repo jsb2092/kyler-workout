@@ -10,7 +10,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icons/*.svg'],
       manifest: {
-        name: 'Kyler Workout Planner',
+        name: 'Your Daily Workout',
         short_name: 'Workout',
         description: 'Your personalized weekly training program',
         theme_color: '#3b82f6',
