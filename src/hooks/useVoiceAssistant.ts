@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { DayName, Exercise } from '../types';
 
-// K-Bot - the voice assistant name
-const ASSISTANT_NAME = 'K-Bot';
+// K-Bot - the voice assistant name (spelled for speech as "KayBot")
+const ASSISTANT_NAME = 'KayBot';
 
 // Web Speech API types
 interface SpeechRecognitionEvent extends Event {
