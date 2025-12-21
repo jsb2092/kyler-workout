@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Download, Upload, Trash2, Settings, X, Volume2, User, Sun, Moon, Palette } from 'lucide-react';
+import { Download, Upload, Trash2, Settings, X, Volume2, User, Sun, Moon, Palette, Search } from 'lucide-react';
 import { exportData, importData, clearAllData } from '../database';
 import { ASSISTANT_NAMES } from '../hooks/useVoiceAssistant';
 import { THEME_COLORS, COLOR_HEX, type ThemeMode, type ThemeColor } from '../hooks/useTheme';
@@ -31,7 +31,10 @@ export function DataManager({
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [showConfirmClear, setShowConfirmClear] = useState(false);
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [voiceSearch, setVoiceSearch] = useState('');
+  const [showVoiceDropdown, setShowVoiceDropdown] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const voiceDropdownRef = useRef<HTMLDivElement>(null);
 
   // Load available voices
   useEffect(() => {
@@ -55,6 +58,34 @@ export function DataManager({
       }
     };
   }, []);
+
+  // Close voice dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (voiceDropdownRef.current && !voiceDropdownRef.current.contains(event.target as Node)) {
+        setShowVoiceDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Filter voices based on search
+  const filteredVoices = availableVoices.filter(voice =>
+    voice.name.toLowerCase().includes(voiceSearch.toLowerCase())
+  );
+
+  const handleVoiceSelect = (voiceName: string) => {
+    onVoiceChange(voiceName === 'auto' ? null : voiceName);
+    setVoiceSearch('');
+    setShowVoiceDropdown(false);
+  };
+
+  const getDisplayVoiceName = () => {
+    if (!selectedVoice) return 'Auto (Best Available)';
+    return selectedVoice;
+  };
 
   const handleVoiceChange = (voiceName: string) => {
     onVoiceChange(voiceName === 'auto' ? null : voiceName);
@@ -332,18 +363,50 @@ export function DataManager({
         <div className="mt-6 pt-4 border-t border-theme-border">
           <h4 className="text-sm font-semibold text-theme-text-secondary mb-3">{assistantName}'s Voice</h4>
           <div className="flex gap-2">
-            <select
-              value={selectedVoice || 'auto'}
-              onChange={(e) => handleVoiceChange(e.target.value)}
-              className="flex-1 bg-theme-bg-tertiary border border-theme-border rounded-lg px-3 py-2 text-theme-text-primary text-sm focus:border-theme-accent-500 focus:outline-none"
-            >
-              <option value="auto">Auto (Best Available)</option>
-              {availableVoices.map((voice) => (
-                <option key={voice.name} value={voice.name}>
-                  {voice.name}
-                </option>
-              ))}
-            </select>
+            <div className="flex-1 relative" ref={voiceDropdownRef}>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-theme-text-muted" />
+                <input
+                  type="text"
+                  value={showVoiceDropdown ? voiceSearch : getDisplayVoiceName()}
+                  onChange={(e) => setVoiceSearch(e.target.value)}
+                  onFocus={() => {
+                    setShowVoiceDropdown(true);
+                    setVoiceSearch('');
+                  }}
+                  placeholder="Search voices..."
+                  className="w-full bg-theme-bg-tertiary border border-theme-border rounded-lg pl-9 pr-3 py-2 text-theme-text-primary text-sm focus:border-theme-accent-500 focus:outline-none"
+                />
+              </div>
+              {showVoiceDropdown && (
+                <div className="absolute z-50 w-full mt-1 bg-theme-bg-tertiary border border-theme-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  <button
+                    onClick={() => handleVoiceSelect('auto')}
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-theme-bg-secondary transition-colors ${
+                      !selectedVoice ? 'text-theme-accent-400 bg-theme-accent-500/10' : 'text-theme-text-primary'
+                    }`}
+                  >
+                    Auto (Best Available)
+                  </button>
+                  {filteredVoices.map((voice) => (
+                    <button
+                      key={voice.name}
+                      onClick={() => handleVoiceSelect(voice.name)}
+                      className={`w-full text-left px-3 py-2 text-sm hover:bg-theme-bg-secondary transition-colors ${
+                        selectedVoice === voice.name ? 'text-theme-accent-400 bg-theme-accent-500/10' : 'text-theme-text-primary'
+                      }`}
+                    >
+                      {voice.name}
+                    </button>
+                  ))}
+                  {filteredVoices.length === 0 && voiceSearch && (
+                    <div className="px-3 py-2 text-sm text-theme-text-muted">
+                      No voices found
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
             <button
               onClick={testVoice}
               className="bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-purple-400 px-3 py-2 rounded-lg transition-colors"

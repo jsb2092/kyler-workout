@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./node_modules/.bin/tsc:*)",
+      "Bash(npm run dev:*)",
+      "Bash(./node_modules/.bin/vite:*)",
+      "Bash(cat:*)",
+      "Bash(npm install:*)",
+      "Bash(nvm install:*)",
+      "Bash(nvm use:*)",
+      "Bash(source ~/.nvm/nvm.sh)",
+      "Bash(brew install:*)",
+      "Bash(curl:*)",
+      "Bash(bash)",
+      "Bash(export NVM_DIR=\"$HOME/.nvm\")",
+      "Bash([ -s \"$NVM_DIR/nvm.sh\" ])",
+      "Bash(. \"$NVM_DIR/nvm.sh\")",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push)",
+      "Bash(gh auth status:*)",
+      "Bash(gh auth:*)",
+      "Bash(npm run build:*)",
+      "Bash(git worktree remove:*)",
+      "Bash(chmod:*)"
+    ]
+  }
+}
