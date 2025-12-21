@@ -270,8 +270,29 @@ export function useVoiceAssistant(actions: VoiceActions) {
     let command = transcript.toLowerCase().trim();
     setLastCommand(command);
 
-    // Strip "K-Bot" or "kay bot" prefix if present
-    command = command.replace(/^(k-bot|kay bot|kbot|k bot),?\s*/i, '');
+    // Check if command is addressed to K-Bot
+    const isAddressedToKBot = /^(k-bot|kay bot|kbot|k bot|hey k-bot|hey kay bot|okay k-bot|okay kay bot),?\s*/i.test(command);
+
+    // Check if it's a mean comment (these don't require addressing K-Bot)
+    const isMeanComment = command.includes('shut up') ||
+                          command.includes('be quiet') ||
+                          command.includes('stop talking') ||
+                          command.includes('you suck') ||
+                          command.includes('you stink') ||
+                          command.includes('hate you') ||
+                          command.includes('you\'re annoying') ||
+                          command.includes('youre annoying') ||
+                          command.includes('so annoying') ||
+                          command.includes('go away') ||
+                          command.includes('leave me alone');
+
+    // If not addressed to K-Bot and not a mean comment, ignore
+    if (!isAddressedToKBot && !isMeanComment) {
+      return false;
+    }
+
+    // Strip "K-Bot" prefix if present
+    command = command.replace(/^(hey |okay )?(k-bot|kay bot|kbot|k bot),?\s*/i, '');
 
     // Get exercises excluding category headers, warm-ups, and cool-downs
     const realExercises = actions.exercises.filter(e => !e.category && !e.isWarmup && !e.isCooldown);
