@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
-import { Download, Upload, Trash2, Settings, X, Volume2, User } from 'lucide-react';
+import { Download, Upload, Trash2, Settings, X, Volume2, User, Sun, Moon, Palette } from 'lucide-react';
 import { exportData, importData, clearAllData } from '../database';
 import { ASSISTANT_NAMES } from '../hooks/useVoiceAssistant';
+import { THEME_COLORS, COLOR_HEX, type ThemeMode, type ThemeColor } from '../hooks/useTheme';
 
 interface DataManagerProps {
   onDataChange: () => void;
@@ -9,9 +10,23 @@ interface DataManagerProps {
   onVoiceChange: (voiceName: string | null) => void;
   assistantName: string;
   onAssistantNameChange: (name: string) => void;
+  themeMode: ThemeMode;
+  themeColor: ThemeColor;
+  onThemeModeChange: (mode: ThemeMode) => void;
+  onThemeColorChange: (color: ThemeColor) => void;
 }
 
-export function DataManager({ onDataChange, selectedVoice, onVoiceChange, assistantName, onAssistantNameChange }: DataManagerProps) {
+export function DataManager({
+  onDataChange,
+  selectedVoice,
+  onVoiceChange,
+  assistantName,
+  onAssistantNameChange,
+  themeMode,
+  themeColor,
+  onThemeModeChange,
+  onThemeColorChange,
+}: DataManagerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [showConfirmClear, setShowConfirmClear] = useState(false);
@@ -118,21 +133,21 @@ export function DataManager({ onDataChange, selectedVoice, onVoiceChange, assist
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-4 right-4 bg-slate-700 hover:bg-slate-600 p-3 rounded-full shadow-lg transition-colors"
+        className="fixed bottom-4 right-4 bg-theme-bg-tertiary hover:bg-theme-bg-secondary p-3 rounded-full shadow-lg transition-colors border border-theme-border"
         aria-label="Settings"
       >
-        <Settings className="w-6 h-6 text-slate-300" />
+        <Settings className="w-6 h-6 text-theme-text-secondary" />
       </button>
     );
   }
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-slate-800 rounded-2xl p-6 max-w-sm w-full border border-slate-600 shadow-2xl">
+      <div className="bg-theme-bg-secondary rounded-2xl p-6 max-w-sm w-full border border-theme-border shadow-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xl font-bold">Data Management</h3>
-          <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-slate-700 rounded-full">
-            <X className="w-6 h-6" />
+          <h3 className="text-xl font-bold text-theme-text-primary">Settings</h3>
+          <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-theme-bg-tertiary rounded-full">
+            <X className="w-6 h-6 text-theme-text-primary" />
           </button>
         </div>
 
@@ -148,82 +163,147 @@ export function DataManager({ onDataChange, selectedVoice, onVoiceChange, assist
           </div>
         )}
 
-        <div className="space-y-3">
-          <button
-            onClick={handleExport}
-            className="w-full flex items-center gap-3 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 text-blue-400 p-4 rounded-xl transition-colors"
-          >
-            <Download className="w-5 h-5" />
-            <div className="text-left">
-              <div className="font-semibold">Export Data</div>
-              <div className="text-sm text-slate-400">Download your workout history</div>
-            </div>
-          </button>
+        {/* Appearance Settings */}
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Palette className="w-4 h-4 text-theme-accent-400" />
+            <h4 className="text-sm font-semibold text-theme-text-secondary">Appearance</h4>
+          </div>
 
-          <button
-            onClick={handleImportClick}
-            className="w-full flex items-center gap-3 bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 text-green-400 p-4 rounded-xl transition-colors"
-          >
-            <Upload className="w-5 h-5" />
-            <div className="text-left">
-              <div className="font-semibold">Import Data</div>
-              <div className="text-sm text-slate-400">Restore from a backup file</div>
+          {/* Dark/Light Mode Toggle */}
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-sm text-theme-text-secondary">Theme Mode</span>
+            <div className="flex bg-theme-bg-tertiary rounded-lg p-1">
+              <button
+                onClick={() => onThemeModeChange('light')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
+                  themeMode === 'light'
+                    ? 'bg-theme-accent-500 text-white'
+                    : 'text-theme-text-muted hover:text-theme-text-primary'
+                }`}
+              >
+                <Sun className="w-4 h-4" />
+                Light
+              </button>
+              <button
+                onClick={() => onThemeModeChange('dark')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
+                  themeMode === 'dark'
+                    ? 'bg-theme-accent-500 text-white'
+                    : 'text-theme-text-muted hover:text-theme-text-primary'
+                }`}
+              >
+                <Moon className="w-4 h-4" />
+                Dark
+              </button>
             </div>
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".json"
-            onChange={handleFileChange}
-            className="hidden"
-          />
+          </div>
 
-          {!showConfirmClear ? (
-            <button
-              onClick={() => setShowConfirmClear(true)}
-              className="w-full flex items-center gap-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 p-4 rounded-xl transition-colors"
-            >
-              <Trash2 className="w-5 h-5" />
-              <div className="text-left">
-                <div className="font-semibold">Clear All Data</div>
-                <div className="text-sm text-slate-400">Delete all workout history</div>
-              </div>
-            </button>
-          ) : (
-            <div className="bg-red-500/20 border border-red-500/30 p-4 rounded-xl">
-              <p className="text-red-400 mb-3">Are you sure? This cannot be undone!</p>
-              <div className="flex gap-2">
+          {/* Color Theme Selector */}
+          <div>
+            <span className="text-sm text-theme-text-secondary block mb-2">Accent Color</span>
+            <div className="flex gap-2">
+              {THEME_COLORS.map((color) => (
                 <button
-                  onClick={handleClear}
-                  className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg font-semibold"
-                >
-                  Yes, Delete
-                </button>
-                <button
-                  onClick={() => setShowConfirmClear(false)}
-                  className="flex-1 bg-slate-600 hover:bg-slate-500 text-white py-2 px-4 rounded-lg font-semibold"
-                >
-                  Cancel
-                </button>
-              </div>
+                  key={color}
+                  onClick={() => onThemeColorChange(color)}
+                  className={`w-10 h-10 rounded-full transition-all ${
+                    themeColor === color
+                      ? 'ring-2 ring-offset-2 ring-offset-theme-bg-secondary scale-110'
+                      : 'hover:scale-105'
+                  }`}
+                  style={{
+                    backgroundColor: COLOR_HEX[color],
+                    // @ts-expect-error - ringColor is a custom property for Tailwind
+                    '--tw-ring-color': COLOR_HEX[color],
+                  }}
+                  aria-label={`${color} theme`}
+                />
+              ))}
             </div>
-          )}
+          </div>
         </div>
 
-        <p className="mt-4 text-xs text-slate-500 text-center">
-          Export your data regularly to keep a backup!
-        </p>
+        {/* Data Management */}
+        <div className="border-t border-theme-border pt-4">
+          <h4 className="text-sm font-semibold text-theme-text-secondary mb-3">Data Management</h4>
+          <div className="space-y-3">
+            <button
+              onClick={handleExport}
+              className="w-full flex items-center gap-3 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 text-blue-400 p-4 rounded-xl transition-colors"
+            >
+              <Download className="w-5 h-5" />
+              <div className="text-left">
+                <div className="font-semibold">Export Data</div>
+                <div className="text-sm text-theme-text-muted">Download your workout history</div>
+              </div>
+            </button>
+
+            <button
+              onClick={handleImportClick}
+              className="w-full flex items-center gap-3 bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 text-green-400 p-4 rounded-xl transition-colors"
+            >
+              <Upload className="w-5 h-5" />
+              <div className="text-left">
+                <div className="font-semibold">Import Data</div>
+                <div className="text-sm text-theme-text-muted">Restore from a backup file</div>
+              </div>
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+
+            {!showConfirmClear ? (
+              <button
+                onClick={() => setShowConfirmClear(true)}
+                className="w-full flex items-center gap-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 p-4 rounded-xl transition-colors"
+              >
+                <Trash2 className="w-5 h-5" />
+                <div className="text-left">
+                  <div className="font-semibold">Clear All Data</div>
+                  <div className="text-sm text-theme-text-muted">Delete all workout history</div>
+                </div>
+              </button>
+            ) : (
+              <div className="bg-red-500/20 border border-red-500/30 p-4 rounded-xl">
+                <p className="text-red-400 mb-3">Are you sure? This cannot be undone!</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleClear}
+                    className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg font-semibold"
+                  >
+                    Yes, Delete
+                  </button>
+                  <button
+                    onClick={() => setShowConfirmClear(false)}
+                    className="flex-1 bg-theme-bg-tertiary hover:bg-theme-bg-primary text-theme-text-primary py-2 px-4 rounded-lg font-semibold"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <p className="mt-4 text-xs text-theme-text-muted text-center">
+            Export your data regularly to keep a backup!
+          </p>
+        </div>
 
         {/* Assistant Name Settings */}
-        <div className="mt-6 pt-4 border-t border-slate-700">
+        <div className="mt-6 pt-4 border-t border-theme-border">
           <div className="flex items-center gap-2 mb-3">
-            <User className="w-4 h-4 text-blue-400" />
-            <h4 className="text-sm font-semibold text-slate-300">Assistant Name</h4>
+            <User className="w-4 h-4 text-theme-accent-400" />
+            <h4 className="text-sm font-semibold text-theme-text-secondary">Assistant Name</h4>
           </div>
           <select
             value={assistantName}
             onChange={(e) => onAssistantNameChange(e.target.value)}
-            className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 focus:outline-none"
+            className="w-full bg-theme-bg-tertiary border border-theme-border rounded-lg px-3 py-2 text-theme-text-primary text-sm focus:border-theme-accent-500 focus:outline-none"
           >
             {ASSISTANT_NAMES.map((name) => (
               <option key={name} value={name}>
@@ -231,19 +311,19 @@ export function DataManager({ onDataChange, selectedVoice, onVoiceChange, assist
               </option>
             ))}
           </select>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-theme-text-muted mt-1">
             Say "{assistantName}, ..." to give commands
           </p>
         </div>
 
         {/* Voice Settings */}
-        <div className="mt-6 pt-4 border-t border-slate-700">
-          <h4 className="text-sm font-semibold text-slate-300 mb-3">{assistantName}'s Voice</h4>
+        <div className="mt-6 pt-4 border-t border-theme-border">
+          <h4 className="text-sm font-semibold text-theme-text-secondary mb-3">{assistantName}'s Voice</h4>
           <div className="flex gap-2">
             <select
               value={selectedVoice || 'auto'}
               onChange={(e) => handleVoiceChange(e.target.value)}
-              className="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 focus:outline-none"
+              className="flex-1 bg-theme-bg-tertiary border border-theme-border rounded-lg px-3 py-2 text-theme-text-primary text-sm focus:border-theme-accent-500 focus:outline-none"
             >
               <option value="auto">Auto (Best Available)</option>
               {availableVoices.map((voice) => (
@@ -262,8 +342,8 @@ export function DataManager({ onDataChange, selectedVoice, onVoiceChange, assist
           </div>
         </div>
 
-        <div className="mt-6 pt-4 border-t border-slate-700 text-center">
-          <p className="text-xs text-slate-500">Version 1.2.23</p>
+        <div className="mt-6 pt-4 border-t border-theme-border text-center">
+          <p className="text-xs text-theme-text-muted">Version 1.3.0</p>
         </div>
       </div>
     </div>

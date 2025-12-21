@@ -18,6 +18,7 @@ import { useVoiceAssistant } from './hooks/useVoiceAssistant';
 import { useDifficulty } from './hooks/useDifficulty';
 import { useWakeLock } from './hooks/useWakeLock';
 import { useCustomWorkouts } from './hooks/useCustomWorkouts';
+import { useTheme } from './hooks/useTheme';
 import type { DayName } from './types';
 
 export default function App() {
@@ -83,6 +84,9 @@ export default function App() {
 
   // Keep screen on while app is active
   useWakeLock();
+
+  // Theme
+  const { mode: themeMode, color: themeColor, setMode: setThemeMode, setColor: setThemeColor } = useTheme();
   const {
     dayDifficulty,
     setDayDifficulty,
@@ -174,7 +178,7 @@ export default function App() {
 
   if (!isReady) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white flex items-center justify-center">
+      <div className="min-h-screen bg-theme-bg-primary text-theme-text-primary flex items-center justify-center">
         <div className="text-xl">Loading...</div>
       </div>
     );
@@ -183,14 +187,14 @@ export default function App() {
   // Assistant ban screen
   if (banTimeLeft > 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-900 via-slate-900 to-slate-900 text-white flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-red-900 via-theme-bg-primary to-theme-bg-primary text-theme-text-primary flex items-center justify-center p-4">
         <div className="text-center">
           <div className="text-6xl mb-4">🚫</div>
           <h1 className="text-3xl font-bold mb-2">{assistantName} is upset!</h1>
-          <p className="text-xl text-slate-300 mb-6">Maybe next time you'll be nicer...</p>
-          <div className="bg-slate-800 rounded-2xl p-6 border border-red-500/30">
+          <p className="text-xl text-theme-text-secondary mb-6">Maybe next time you'll be nicer...</p>
+          <div className="bg-theme-bg-secondary rounded-2xl p-6 border border-red-500/30">
             <div className="text-5xl font-mono font-bold text-red-400">{banTimeLeft}s</div>
-            <p className="text-slate-400 mt-2">until {assistantName} forgives you</p>
+            <p className="text-theme-text-muted mt-2">until {assistantName} forgives you</p>
           </div>
         </div>
       </div>
@@ -198,7 +202,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white p-4 pb-32">
+    <div className="min-h-screen bg-theme-bg-primary text-theme-text-primary p-4 pb-32">
       {timerActive && timerData && (
         <TimerModal
           timerData={timerData}
@@ -269,14 +273,18 @@ export default function App() {
           onVoiceChange={handleVoiceChange}
           assistantName={assistantName}
           onAssistantNameChange={handleAssistantNameChange}
+          themeMode={themeMode}
+          themeColor={themeColor}
+          onThemeModeChange={setThemeMode}
+          onThemeColorChange={setThemeColor}
         />
 
       {/* Voice Debug Panel */}
       {lastCommand && (
-        <div className="fixed bottom-20 left-4 right-4 bg-slate-800/95 backdrop-blur border border-slate-600 rounded-xl p-3 text-sm z-40">
-          <div className="text-slate-400 text-xs mb-1">Last heard:</div>
-          <div className="text-white font-mono break-words">{lastCommand}</div>
-          <div className="text-slate-500 text-xs mt-2">
+        <div className="fixed bottom-20 left-4 right-4 bg-theme-bg-secondary/95 backdrop-blur border border-theme-border rounded-xl p-3 text-sm z-40">
+          <div className="text-theme-text-muted text-xs mb-1">Last heard:</div>
+          <div className="text-theme-text-primary font-mono break-words">{lastCommand}</div>
+          <div className="text-theme-text-muted text-xs mt-2">
             Looking for: "{assistantName.toLowerCase()}" prefix
           </div>
         </div>

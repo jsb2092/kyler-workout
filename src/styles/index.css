@@ -2,10 +2,70 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Theme CSS Variables */
+:root {
+  /* Dark mode colors (default) */
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
+  --text-primary: #ffffff;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --border-color: #475569;
+
+  /* Blue accent (default) */
+  --accent-400: #60a5fa;
+  --accent-500: #3b82f6;
+  --accent-600: #2563eb;
+}
+
+/* Light mode */
+[data-mode="light"] {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --bg-tertiary: #e2e8f0;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --border-color: #cbd5e1;
+}
+
+/* Color themes */
+[data-color="blue"] {
+  --accent-400: #60a5fa;
+  --accent-500: #3b82f6;
+  --accent-600: #2563eb;
+}
+
+[data-color="green"] {
+  --accent-400: #4ade80;
+  --accent-500: #22c55e;
+  --accent-600: #16a34a;
+}
+
+[data-color="purple"] {
+  --accent-400: #c084fc;
+  --accent-500: #a855f7;
+  --accent-600: #9333ea;
+}
+
+[data-color="red"] {
+  --accent-400: #f87171;
+  --accent-500: #ef4444;
+  --accent-600: #dc2626;
+}
+
+[data-color="orange"] {
+  --accent-400: #fb923c;
+  --accent-500: #f97316;
+  --accent-600: #ea580c;
+}
+
 /* Custom styles for the workout app */
 html {
   -webkit-tap-highlight-color: transparent;
-  background-color: #0f172a;
+  background-color: var(--bg-primary);
+  transition: background-color 0.3s ease;
 }
 
 body {
@@ -14,7 +74,9 @@ body {
     'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #0f172a;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Safe area insets for iOS */
@@ -43,16 +105,16 @@ button {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(30, 41, 59, 0.5);
+  background: var(--bg-secondary);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(100, 116, 139, 0.5);
+  background: var(--border-color);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(100, 116, 139, 0.7);
+  background: var(--text-muted);
 }
 
 /* Voice command fade-in animation */
@@ -74,4 +136,16 @@ button {
 /* Safe area for floating button on iOS */
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Theme transition for smooth switching */
+* {
+  transition-property: background-color, border-color, color;
+  transition-duration: 0.15s;
+  transition-timing-function: ease-out;
+}
+
+/* Disable transitions on page load */
+.no-transitions * {
+  transition: none !important;
 }
