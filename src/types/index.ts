@@ -1,11 +1,23 @@
-export interface Exercise {
+export type DifficultyLevel = 'easier' | 'normal' | 'harder';
+
+export interface ExerciseVariant {
   name: string;
   duration?: string;
   sets?: string;
   muscles: string;
   description: string;
-  easier: string;
-  harder: string;
+}
+
+export interface Exercise {
+  id: string;
+  name: string;
+  duration?: string;
+  sets?: string;
+  muscles: string;
+  description: string;
+  easier: string | ExerciseVariant;
+  harder: string | ExerciseVariant;
+  hasVariants?: boolean;
   isWarmup?: boolean;
   isCooldown?: boolean;
   isStretch?: boolean;
@@ -29,6 +41,14 @@ export interface WorkoutCompletion {
   completedDate: string;
   isRestDay: boolean;
   createdAt: string;
+}
+
+export interface DifficultyPreference {
+  id?: number;
+  dayName: DayName;
+  exerciseId: string | null;  // null = day-level preference
+  difficulty: DifficultyLevel;
+  updatedAt: string;
 }
 
 export interface TimerData {

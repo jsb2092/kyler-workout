@@ -13,6 +13,7 @@ import { useDatabase } from './hooks/useDatabase';
 import { useStreak } from './hooks/useStreak';
 import { useTimer } from './hooks/useTimer';
 import { useVoiceAssistant } from './hooks/useVoiceAssistant';
+import { useDifficulty } from './hooks/useDifficulty';
 import { workoutData } from './data/workouts';
 import type { DayName } from './types';
 
@@ -22,6 +23,13 @@ export default function App() {
 
   const { isReady } = useDatabase();
   const { streak, showCelebration, completedToday, completeWorkout, checkCompletedToday, refreshStreak } = useStreak();
+  const {
+    dayDifficulty,
+    setDayDifficulty,
+    setExerciseDifficulty,
+    getEffectiveDifficulty,
+    getEffectiveExercise,
+  } = useDifficulty(selectedDay);
   const {
     timerActive,
     timerData,
@@ -136,7 +144,12 @@ export default function App() {
           <DaySelector onSelectDay={handleSelectDay} />
         ) : (
           <div>
-            <DayHeader day={selectedDay} onBack={handleBack} />
+            <DayHeader
+              day={selectedDay}
+              onBack={handleBack}
+              dayDifficulty={dayDifficulty}
+              onDifficultyChange={setDayDifficulty}
+            />
 
             <ExerciseList
               day={selectedDay}
@@ -145,6 +158,9 @@ export default function App() {
               onStartTimer={startTimer}
               onStartExerciseTimer={startExerciseTimer}
               hasTimedSets={hasTimedSets}
+              getEffectiveDifficulty={getEffectiveDifficulty}
+              getEffectiveExercise={getEffectiveExercise}
+              onExerciseDifficultyChange={setExerciseDifficulty}
             />
 
             <TipsCard />

@@ -1,9 +1,12 @@
 import { ChevronDown, ChevronUp, Timer, TrendingUp } from 'lucide-react';
-import type { Exercise } from '../types';
+import type { Exercise, ExerciseVariant, DifficultyLevel } from '../types';
+import { DifficultySelector } from './DifficultySelector';
 
 interface ExerciseCardProps {
   exercise: Exercise;
-  index: number;
+  effectiveExercise: Exercise | ExerciseVariant;
+  difficulty: DifficultyLevel;
+  onDifficultyChange?: (difficulty: DifficultyLevel) => void;
   isExpanded: boolean;
   onToggle: () => void;
   onStartTimer: (exercise: Exercise, type: 'warmup' | 'cooldown') => void;
@@ -13,6 +16,9 @@ interface ExerciseCardProps {
 
 export function ExerciseCard({
   exercise,
+  effectiveExercise,
+  difficulty,
+  onDifficultyChange,
   isExpanded,
   onToggle,
   onStartTimer,
@@ -27,6 +33,18 @@ export function ExerciseCard({
     ? 'border-purple-500/30'
     : 'border-slate-700';
 
+  // Use effective exercise for display
+  const displayName = effectiveExercise.name;
+  const displaySets = effectiveExercise.sets ?? ('duration' in effectiveExercise ? effectiveExercise.duration : undefined);
+  const displayMuscles = effectiveExercise.muscles;
+  const displayDescription = effectiveExercise.description;
+
+  // Show difficulty selector for exercises with variants
+  const showDifficultySelector = exercise.hasVariants && onDifficultyChange;
+
+  // Check if easier/harder are strings (tips) or full variants
+  const hasStringTips = !exercise.hasVariants && (typeof exercise.easier === 'string' || typeof exercise.harder === 'string');
+
   return (
     <div className={`bg-slate-800 rounded-xl border ${borderClass} overflow-hidden`}>
       <button
@@ -35,10 +53,21 @@ export function ExerciseCard({
       >
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-1 flex-wrap">
-            <span className="text-lg font-semibold">{exercise.name}</span>
-            {(exercise.sets || exercise.duration) && (
+            <span className="text-lg font-semibold">{displayName}</span>
+            {displaySets && (
               <span className="text-blue-400 text-sm font-medium px-3 py-1 bg-blue-400/10 rounded-full">
-                {exercise.sets || exercise.duration}
+                {displaySets}
+              </span>
+            )}
+            {difficulty !== 'normal' && exercise.hasVariants && (
+              <span
+                className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                  difficulty === 'easier'
+                    ? 'bg-green-500/20 text-green-400'
+                    : 'bg-orange-500/20 text-orange-400'
+                }`}
+              >
+                {difficulty === 'easier' ? 'Easier' : 'Harder'}
               </span>
             )}
             {exercise.isWarmup && (
@@ -78,7 +107,7 @@ export function ExerciseCard({
               </button>
             )}
           </div>
-          <div className="text-slate-400 text-sm">{exercise.muscles}</div>
+          <div className="text-slate-400 text-sm">{displayMuscles}</div>
         </div>
         {isExpanded ? (
           <ChevronUp className="w-5 h-5 text-slate-400" />
@@ -90,21 +119,39 @@ export function ExerciseCard({
         <div className="px-5 pb-5 border-t border-slate-700 pt-4">
           <div className="mb-4">
             <h4 className="text-sm font-semibold text-blue-400 mb-2">HOW TO DO IT</h4>
-            <p className="text-slate-300 leading-relaxed">{exercise.description}</p>
+            <p className="text-slate-300 leading-relaxed">{displayDescription}</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
-              <span className="text-green-400 font-semibold text-sm">EASIER VERSION</span>
-              <p className="text-slate-300 text-sm mt-2">{exercise.easier}</p>
+
+          {showDifficultySelector && (
+            <div className="mb-4 flex items-center gap-3">
+              <span className="text-sm text-slate-400">Adjust difficulty:</span>
+              <DifficultySelector
+                currentDifficulty={difficulty}
+                onChange={onDifficultyChange}
+                size="sm"
+              />
             </div>
-            <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-orange-400" />
-                <span className="text-orange-400 font-semibold text-sm">HARDER VERSION</span>
-              </div>
-              <p className="text-slate-300 text-sm mt-2">{exercise.harder}</p>
+          )}
+
+          {hasStringTips && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {typeof exercise.easier === 'string' && exercise.easier && (
+                <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
+                  <span className="text-green-400 font-semibold text-sm">EASIER VERSION</span>
+                  <p className="text-slate-300 text-sm mt-2">{exercise.easier}</p>
+                </div>
+              )}
+              {typeof exercise.harder === 'string' && exercise.harder && (
+                <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-orange-400" />
+                    <span className="text-orange-400 font-semibold text-sm">HARDER VERSION</span>
+                  </div>
+                  <p className="text-slate-300 text-sm mt-2">{exercise.harder}</p>
+                </div>
+              )}
             </div>
-          </div>
+          )}
         </div>
       )}
     </div>

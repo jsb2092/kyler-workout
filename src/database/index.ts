@@ -1,5 +1,5 @@
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
-import type { DayName, WorkoutCompletion } from '../types';
+import type { DayName, WorkoutCompletion, DifficultyPreference, DifficultyLevel } from '../types';
 
 interface WorkoutDB extends DBSchema {
   completions: {
@@ -10,23 +10,41 @@ interface WorkoutDB extends DBSchema {
       'by-day': string;
     };
   };
+  difficultyPreferences: {
+    key: number;
+    value: DifficultyPreference;
+    indexes: {
+      'by-day': string;
+      'by-day-exercise': string;
+    };
+  };
 }
 
 const DB_NAME = 'kyler-workout-db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 let dbPromise: Promise<IDBPDatabase<WorkoutDB>> | null = null;
 
 export async function initDatabase(): Promise<IDBPDatabase<WorkoutDB>> {
   if (!dbPromise) {
     dbPromise = openDB<WorkoutDB>(DB_NAME, DB_VERSION, {
-      upgrade(db) {
-        const store = db.createObjectStore('completions', {
-          keyPath: 'id',
-          autoIncrement: true,
-        });
-        store.createIndex('by-date', 'completedDate');
-        store.createIndex('by-day', 'dayName');
+      upgrade(db, oldVersion) {
+        if (oldVersion < 1) {
+          const store = db.createObjectStore('completions', {
+            keyPath: 'id',
+            autoIncrement: true,
+          });
+          store.createIndex('by-date', 'completedDate');
+          store.createIndex('by-day', 'dayName');
+        }
+        if (oldVersion < 2) {
+          const prefStore = db.createObjectStore('difficultyPreferences', {
+            keyPath: 'id',
+            autoIncrement: true,
+          });
+          prefStore.createIndex('by-day', 'dayName');
+          prefStore.createIndex('by-day-exercise', ['dayName', 'exerciseId']);
+        }
       },
     });
   }
@@ -161,4 +179,81 @@ export async function importData(jsonString: string): Promise<{ success: boolean
 export async function clearAllData(): Promise<void> {
   const db = await initDatabase();
   await db.clear('completions');
+  await db.clear('difficultyPreferences');
+}
+
+// Get day-level difficulty preference
+export async function getDayDifficulty(dayName: DayName): Promise<DifficultyLevel> {
+  const db = await initDatabase();
+  const prefs = await db.getAllFromIndex('difficultyPreferences', 'by-day', dayName);
+  const dayPref = prefs.find(p => p.exerciseId === null);
+  return dayPref?.difficulty ?? 'normal';
+}
+
+// Set day-level difficulty preference
+export async function setDayDifficulty(dayName: DayName, difficulty: DifficultyLevel): Promise<void> {
+  const db = await initDatabase();
+  const prefs = await db.getAllFromIndex('difficultyPreferences', 'by-day', dayName);
+  const existing = prefs.find(p => p.exerciseId === null);
+
+  if (existing?.id) {
+    await db.put('difficultyPreferences', {
+      ...existing,
+      difficulty,
+      updatedAt: new Date().toISOString(),
+    });
+  } else {
+    await db.add('difficultyPreferences', {
+      dayName,
+      exerciseId: null,
+      difficulty,
+      updatedAt: new Date().toISOString(),
+    });
+  }
+}
+
+// Get all exercise-level difficulties for a day
+export async function getExerciseDifficulties(dayName: DayName): Promise<Record<string, DifficultyLevel>> {
+  const db = await initDatabase();
+  const prefs = await db.getAllFromIndex('difficultyPreferences', 'by-day', dayName);
+  const result: Record<string, DifficultyLevel> = {};
+  for (const pref of prefs) {
+    if (pref.exerciseId !== null) {
+      result[pref.exerciseId] = pref.difficulty;
+    }
+  }
+  return result;
+}
+
+// Set exercise-level difficulty preference
+export async function setExerciseDifficulty(dayName: DayName, exerciseId: string, difficulty: DifficultyLevel): Promise<void> {
+  const db = await initDatabase();
+  const prefs = await db.getAllFromIndex('difficultyPreferences', 'by-day', dayName);
+  const existing = prefs.find(p => p.exerciseId === exerciseId);
+
+  if (existing?.id) {
+    await db.put('difficultyPreferences', {
+      ...existing,
+      difficulty,
+      updatedAt: new Date().toISOString(),
+    });
+  } else {
+    await db.add('difficultyPreferences', {
+      dayName,
+      exerciseId,
+      difficulty,
+      updatedAt: new Date().toISOString(),
+    });
+  }
+}
+
+// Reset all difficulties for a day back to normal
+export async function resetDayDifficulties(dayName: DayName): Promise<void> {
+  const db = await initDatabase();
+  const prefs = await db.getAllFromIndex('difficultyPreferences', 'by-day', dayName);
+  for (const pref of prefs) {
+    if (pref.id) {
+      await db.delete('difficultyPreferences', pref.id);
+    }
+  }
 }

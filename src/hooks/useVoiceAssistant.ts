@@ -149,8 +149,8 @@ export function useVoiceAssistant(actions: VoiceActions) {
     // Strip "K-Bot" or "kay bot" prefix if present
     command = command.replace(/^(k-bot|kay bot|kbot|k bot),?\s*/i, '');
 
-    // Get exercises excluding category headers
-    const realExercises = actions.exercises.filter(e => !e.category);
+    // Get exercises excluding category headers, warm-ups, and cool-downs
+    const realExercises = actions.exercises.filter(e => !e.category && !e.isWarmup && !e.isCooldown);
 
     // Check for ordinal words or numbers first (for exercise lookup)
     let exerciseIndex = -1;
