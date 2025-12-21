@@ -163,6 +163,10 @@ export function DataManager({ onDataChange }: DataManagerProps) {
         <p className="mt-4 text-xs text-slate-500 text-center">
           Export your data regularly to keep a backup!
         </p>
+
+        <div className="mt-6 pt-4 border-t border-slate-700 text-center">
+          <p className="text-xs text-slate-500">Version 1.1.0</p>
+        </div>
       </div>
     </div>
   );
