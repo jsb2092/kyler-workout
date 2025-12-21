@@ -165,7 +165,7 @@ export function DataManager({ onDataChange }: DataManagerProps) {
         </p>
 
         <div className="mt-6 pt-4 border-t border-slate-700 text-center">
-          <p className="text-xs text-slate-500">Version 1.2.3</p>
+          <p className="text-xs text-slate-500">Version 1.2.4</p>
         </div>
       </div>
     </div>

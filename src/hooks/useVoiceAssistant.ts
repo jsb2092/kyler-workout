@@ -169,18 +169,56 @@ export function useVoiceAssistant(actions: VoiceActions) {
     setIsSpeaking(true);
 
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.9;
-    utterance.pitch = 1.0;
+    utterance.rate = 1.0;
+    utterance.pitch = 1.05;
     utterance.volume = 1.0;
     utterance.lang = 'en-US';
 
-    // iOS fix: need to use a voice explicitly
+    // Select the most natural-sounding voice available
     const voices = synth.getVoices();
     if (voices.length > 0) {
-      // Prefer English US voices, then any English voice
-      const englishUSVoice = voices.find(v => v.lang === 'en-US');
-      const englishVoice = voices.find(v => v.lang.startsWith('en'));
-      utterance.voice = englishUSVoice || englishVoice || voices[0] || null;
+      // Priority list of natural-sounding voices (in order of preference)
+      const preferredVoices = [
+        // iOS premium voices
+        'Samantha', 'Karen', 'Daniel', 'Moira', 'Tessa',
+        // macOS premium voices
+        'Ava', 'Allison', 'Susan',
+        // Google/Chrome voices (sound more natural)
+        'Google US English', 'Google UK English Female', 'Google UK English Male',
+        // Microsoft voices
+        'Microsoft Zira', 'Microsoft David', 'Microsoft Mark',
+        // Android voices
+        'English United States',
+      ];
+
+      // Find the best available voice
+      let selectedVoice = null;
+
+      // First try to find a preferred voice
+      for (const preferred of preferredVoices) {
+        const found = voices.find(v => v.name.includes(preferred));
+        if (found) {
+          selectedVoice = found;
+          break;
+        }
+      }
+
+      // If no preferred voice, look for any premium/enhanced English voice
+      if (!selectedVoice) {
+        selectedVoice = voices.find(v =>
+          v.lang.startsWith('en') &&
+          (v.name.includes('Premium') || v.name.includes('Enhanced') || v.localService === false)
+        );
+      }
+
+      // Fall back to any English US voice, then any English voice
+      if (!selectedVoice) {
+        selectedVoice = voices.find(v => v.lang === 'en-US') ||
+                        voices.find(v => v.lang.startsWith('en')) ||
+                        voices[0];
+      }
+
+      utterance.voice = selectedVoice || null;
     }
 
     // Track if we've already reset speaking state
