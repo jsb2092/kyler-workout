@@ -12,7 +12,6 @@ import { DataManager } from './components/DataManager';
 import { VoiceButton } from './components/VoiceButton';
 import { WorkoutEditor } from './components/WorkoutEditor';
 import { Stopwatch } from './components/Stopwatch';
-import { DevNotes } from './components/DevNotes';
 import { useDatabase } from './hooks/useDatabase';
 import { useStreak } from './hooks/useStreak';
 import { useTimer } from './hooks/useTimer';
@@ -21,6 +20,7 @@ import { useDifficulty } from './hooks/useDifficulty';
 import { useWakeLock } from './hooks/useWakeLock';
 import { useCustomWorkouts } from './hooks/useCustomWorkouts';
 import { useTheme } from './hooks/useTheme';
+import { useStopwatch } from './hooks/useStopwatch';
 import type { DayName } from './types';
 
 export default function App() {
@@ -89,6 +89,16 @@ export default function App() {
 
   // Theme
   const { mode: themeMode, color: themeColor, setMode: setThemeMode, setColor: setThemeColor } = useTheme();
+
+  // Stopwatch
+  const {
+    elapsedTime: stopwatchTime,
+    isRunning: stopwatchRunning,
+    start: startStopwatch,
+    pause: pauseStopwatch,
+    reset: resetStopwatch,
+    formatTime: formatStopwatchTime,
+  } = useStopwatch();
 
   const {
     dayDifficulty,
@@ -169,6 +179,11 @@ export default function App() {
     onResetTimer: resetTimer,
     onCloseTimer: closeTimer,
     onCompleteWorkout: handleComplete,
+    onStartStopwatch: startStopwatch,
+    onStopStopwatch: pauseStopwatch,
+    onResetStopwatch: resetStopwatch,
+    stopwatchRunning,
+    stopwatchTime,
     selectedDay,
     timerActive,
     isPaused,
@@ -285,9 +300,13 @@ export default function App() {
           onThemeColorChange={setThemeColor}
         />
 
-      <Stopwatch />
-
-      <DevNotes />
+      <Stopwatch
+        elapsedTime={stopwatchTime}
+        isRunning={stopwatchRunning}
+        onToggle={stopwatchRunning ? pauseStopwatch : startStopwatch}
+        onReset={resetStopwatch}
+        formatTime={formatStopwatchTime}
+      />
 
       <VoiceButton
         isListening={isListening}

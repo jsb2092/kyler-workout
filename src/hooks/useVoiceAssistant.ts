@@ -38,6 +38,11 @@ interface VoiceActions {
   onResetTimer: () => void;
   onCloseTimer: () => void;
   onCompleteWorkout: () => void;
+  onStartStopwatch: () => void;
+  onStopStopwatch: () => void;
+  onResetStopwatch: () => void;
+  stopwatchRunning: boolean;
+  stopwatchTime: number;
   selectedDay: DayName | null;
   timerActive: boolean;
   isPaused: boolean;
@@ -453,6 +458,43 @@ export function useVoiceAssistant(actions: VoiceActions) {
       }
     }
 
+    // Stopwatch commands
+    if (command.includes('stopwatch') || command.includes('stop watch')) {
+      if (command.includes('start') || command.includes('go')) {
+        if (actions.stopwatchRunning) {
+          speak('Stopwatch is already running!');
+        } else {
+          actions.onStartStopwatch();
+          speak('Stopwatch started!');
+        }
+        return true;
+      }
+
+      if (command.includes('reset') || command.includes('clear')) {
+        actions.onResetStopwatch();
+        speak('Stopwatch reset to zero.');
+        return true;
+      }
+    }
+
+    // Stop command while stopwatch is running
+    if (actions.stopwatchRunning && command.includes('stop') && !command.includes('stopwatch')) {
+      actions.onStopStopwatch();
+      const totalSeconds = Math.floor(actions.stopwatchTime / 1000);
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+
+      let timeMessage = '';
+      if (minutes > 0) {
+        timeMessage = `${minutes} minute${minutes !== 1 ? 's' : ''} and ${seconds} second${seconds !== 1 ? 's' : ''}`;
+      } else {
+        timeMessage = `${seconds} second${seconds !== 1 ? 's' : ''}`;
+      }
+
+      speak(`Stopwatch stopped at ${timeMessage}.`);
+      return true;
+    }
+
     // Timer controls
     if (actions.timerActive) {
       if (command.includes('pause')) {
@@ -508,7 +550,7 @@ export function useVoiceAssistant(actions: VoiceActions) {
 
     // Help command
     if (command.includes('help') || command.includes('commands') || command.includes('what can you do')) {
-      speak(`I'm ${actions.assistantName}, your workout buddy! You can say things like: go to Monday, what's my first exercise, what's my second exercise, start warmup, pause, resume, or complete workout.`);
+      speak(`I'm ${actions.assistantName}, your workout buddy! You can say things like: go to Monday, what's my first exercise, start warmup, start stopwatch, stop, reset stopwatch, or complete workout.`);
       return true;
     }
 

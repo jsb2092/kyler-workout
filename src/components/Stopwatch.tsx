@@ -1,10 +1,16 @@
 import { useState } from 'react';
 import { Timer, X, Play, Pause, RotateCcw } from 'lucide-react';
-import { useStopwatch } from '../hooks/useStopwatch';
 
-export function Stopwatch() {
+interface StopwatchProps {
+  elapsedTime: number;
+  isRunning: boolean;
+  onToggle: () => void;
+  onReset: () => void;
+  formatTime: (ms: number) => { minutes: string; seconds: string; centiseconds: string };
+}
+
+export function Stopwatch({ elapsedTime, isRunning, onToggle, onReset, formatTime }: StopwatchProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const { elapsedTime, isRunning, toggle, reset, formatTime } = useStopwatch();
 
   const time = formatTime(elapsedTime);
 
@@ -52,14 +58,14 @@ export function Stopwatch() {
             {/* Controls */}
             <div className="flex items-center justify-center gap-4">
               <button
-                onClick={reset}
+                onClick={onReset}
                 className="p-4 rounded-full bg-theme-bg-tertiary hover:bg-theme-bg-primary text-theme-text-secondary transition-colors"
               >
                 <RotateCcw className="w-6 h-6" />
               </button>
 
               <button
-                onClick={toggle}
+                onClick={onToggle}
                 className={`p-6 rounded-full text-white transition-colors ${
                   isRunning
                     ? 'bg-orange-500 hover:bg-orange-600'
