@@ -87,10 +87,6 @@ export function DataManager({
     return selectedVoice;
   };
 
-  const handleVoiceChange = (voiceName: string) => {
-    onVoiceChange(voiceName === 'auto' ? null : voiceName);
-  };
-
   const testVoice = () => {
     const synth = window.speechSynthesis;
     if (!synth) return;
