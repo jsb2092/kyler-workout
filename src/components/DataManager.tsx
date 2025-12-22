@@ -182,13 +182,14 @@ export function DataManager({
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-theme-bg-secondary rounded-2xl p-6 max-w-sm w-full border border-theme-border shadow-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-6">
+      <div className="bg-theme-bg-secondary rounded-2xl max-w-sm w-full border border-theme-border shadow-2xl max-h-[90vh] flex flex-col">
+        <div className="flex justify-between items-center p-6 pb-4 border-b border-theme-border sticky top-0 bg-theme-bg-secondary rounded-t-2xl z-10">
           <h3 className="text-xl font-bold text-theme-text-primary">Settings</h3>
           <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-theme-bg-tertiary rounded-full">
             <X className="w-6 h-6 text-theme-text-primary" />
           </button>
         </div>
+        <div className="p-6 pt-4 overflow-y-auto flex-1">
 
         {message && (
           <div
@@ -414,7 +415,8 @@ export function DataManager({
         </div>
 
         <div className="mt-6 pt-4 border-t border-theme-border text-center">
-          <p className="text-xs text-theme-text-muted">Version 1.3.2</p>
+          <p className="text-xs text-theme-text-muted">Version {__APP_VERSION__}</p>
+        </div>
         </div>
       </div>
     </div>

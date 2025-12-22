@@ -74,3 +74,4 @@ export interface CustomWorkout {
   exercises: Exercise[];
   updatedAt: string;
 }
+

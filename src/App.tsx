@@ -87,6 +87,7 @@ export default function App() {
 
   // Theme
   const { mode: themeMode, color: themeColor, setMode: setThemeMode, setColor: setThemeColor } = useTheme();
+
   const {
     dayDifficulty,
     setDayDifficulty,
@@ -129,9 +130,9 @@ export default function App() {
     setExpandedExercise(null);
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     if (selectedDay) {
-      completeWorkout(selectedDay);
+      await completeWorkout(selectedDay);
     }
   };
 
@@ -220,7 +221,10 @@ export default function App() {
       )}
 
       <div className="max-w-4xl mx-auto">
-        <Header streak={streak} showCelebration={showCelebration} />
+        <Header
+          streak={streak}
+          showCelebration={showCelebration}
+        />
 
         {!selectedDay && (
           <GoalsCard
@@ -310,6 +314,7 @@ export default function App() {
           onClose={() => setShowWorkoutEditor(false)}
         />
       )}
+
     </div>
   );
 }

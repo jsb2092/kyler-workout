@@ -32,7 +32,7 @@ interface WorkoutDB extends DBSchema {
 }
 
 const DB_NAME = 'kyler-workout-db';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 
 let dbPromise: Promise<IDBPDatabase<WorkoutDB>> | null = null;
 
