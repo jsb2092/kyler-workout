@@ -28,6 +28,7 @@ export default function App() {
   const [expandedExercise, setExpandedExercise] = useState<number | null>(null);
   const [showGoalsEditor, setShowGoalsEditor] = useState(false);
   const [showWorkoutEditor, setShowWorkoutEditor] = useState(false);
+  const [showStopwatch, setShowStopwatch] = useState(false);
   const [banTimeLeft, setBanTimeLeft] = useState<number>(0);
   const [assistantName, setAssistantName] = useState<string>(() => {
     return localStorage.getItem('assistant-name') || 'Rocky';
@@ -179,7 +180,10 @@ export default function App() {
     onResetTimer: resetTimer,
     onCloseTimer: closeTimer,
     onCompleteWorkout: handleComplete,
-    onStartStopwatch: startStopwatch,
+    onStartStopwatch: () => {
+      startStopwatch();
+      setShowStopwatch(true);
+    },
     onStopStopwatch: pauseStopwatch,
     onResetStopwatch: resetStopwatch,
     stopwatchRunning,
@@ -303,8 +307,10 @@ export default function App() {
       <Stopwatch
         elapsedTime={stopwatchTime}
         isRunning={stopwatchRunning}
+        isOpen={showStopwatch}
         onToggle={stopwatchRunning ? pauseStopwatch : startStopwatch}
         onReset={resetStopwatch}
+        onOpenChange={setShowStopwatch}
         formatTime={formatStopwatchTime}
       />
 

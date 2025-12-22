@@ -1,16 +1,16 @@
-import { useState } from 'react';
 import { Timer, X, Play, Pause, RotateCcw } from 'lucide-react';
 
 interface StopwatchProps {
   elapsedTime: number;
   isRunning: boolean;
+  isOpen: boolean;
   onToggle: () => void;
   onReset: () => void;
+  onOpenChange: (open: boolean) => void;
   formatTime: (ms: number) => { minutes: string; seconds: string; centiseconds: string };
 }
 
-export function Stopwatch({ elapsedTime, isRunning, onToggle, onReset, formatTime }: StopwatchProps) {
-  const [isOpen, setIsOpen] = useState(false);
+export function Stopwatch({ elapsedTime, isRunning, isOpen, onToggle, onReset, onOpenChange, formatTime }: StopwatchProps) {
 
   const time = formatTime(elapsedTime);
 
@@ -18,7 +18,7 @@ export function Stopwatch({ elapsedTime, isRunning, onToggle, onReset, formatTim
     <>
       {/* Floating button */}
       <button
-        onClick={() => setIsOpen(true)}
+        onClick={() => onOpenChange(true)}
         className="fixed bottom-6 left-6 z-40 w-14 h-14 rounded-full bg-theme-accent-500 hover:bg-theme-accent-600 text-white shadow-lg flex items-center justify-center transition-all"
       >
         <Timer className="w-6 h-6" />
@@ -38,7 +38,7 @@ export function Stopwatch({ elapsedTime, isRunning, onToggle, onReset, formatTim
                 Stopwatch
               </h2>
               <button
-                onClick={() => setIsOpen(false)}
+                onClick={() => onOpenChange(false)}
                 className="p-2 hover:bg-theme-bg-tertiary rounded-lg transition-colors"
               >
                 <X className="w-5 h-5 text-theme-text-muted" />
@@ -80,7 +80,7 @@ export function Stopwatch({ elapsedTime, isRunning, onToggle, onReset, formatTim
               </button>
 
               <button
-                onClick={() => setIsOpen(false)}
+                onClick={() => onOpenChange(false)}
                 className="p-4 rounded-full bg-theme-bg-tertiary hover:bg-theme-bg-primary text-theme-text-secondary transition-colors"
               >
                 <X className="w-6 h-6" />
