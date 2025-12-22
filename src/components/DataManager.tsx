@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Download, Upload, Trash2, Settings, X, Volume2, User, Sun, Moon, Palette, Search } from 'lucide-react';
+import { Download, Upload, Trash2, Settings, X, Volume2, User, Sun, Moon, Palette, Search, Code, Lock } from 'lucide-react';
 import { exportData, importData, clearAllData } from '../database';
 import { ASSISTANT_NAMES } from '../hooks/useVoiceAssistant';
 import { THEME_COLORS, COLOR_HEX, type ThemeMode, type ThemeColor } from '../hooks/useTheme';
@@ -33,8 +33,13 @@ export function DataManager({
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [voiceSearch, setVoiceSearch] = useState('');
   const [showVoiceDropdown, setShowVoiceDropdown] = useState(false);
+  const [devModeEnabled, setDevModeEnabled] = useState(() => localStorage.getItem('dev-mode') === 'true');
+  const [showDevPassword, setShowDevPassword] = useState(false);
+  const [devPassword, setDevPassword] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const voiceDropdownRef = useRef<HTMLDivElement>(null);
+
+  const DEV_PASSWORD = '382988';
 
   // Load available voices
   useEffect(() => {
@@ -412,6 +417,103 @@ export function DataManager({
               <Volume2 className="w-5 h-5" />
             </button>
           </div>
+        </div>
+
+        {/* Dev Mode Section */}
+        <div className="mt-6 pt-4 border-t border-theme-border">
+          <div className="flex items-center gap-2 mb-3">
+            <Code className="w-4 h-4 text-purple-400" />
+            <h4 className="text-sm font-semibold text-theme-text-secondary">Developer Mode</h4>
+          </div>
+
+          {devModeEnabled ? (
+            <div className="bg-purple-500/20 border border-purple-500/30 rounded-xl p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                  <span className="text-purple-400 font-medium">Dev Mode Active</span>
+                </div>
+                <button
+                  onClick={() => {
+                    setDevModeEnabled(false);
+                    localStorage.removeItem('dev-mode');
+                  }}
+                  className="text-sm text-theme-text-muted hover:text-red-400 transition-colors"
+                >
+                  Disable
+                </button>
+              </div>
+              <p className="text-xs text-theme-text-muted mt-2">Dev features like notes are now accessible.</p>
+            </div>
+          ) : showDevPassword ? (
+            <div className="bg-theme-bg-tertiary border border-theme-border rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Lock className="w-4 h-4 text-theme-text-muted" />
+                <span className="text-sm text-theme-text-secondary">Enter password</span>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="password"
+                  value={devPassword}
+                  onChange={(e) => setDevPassword(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      if (devPassword === DEV_PASSWORD) {
+                        setDevModeEnabled(true);
+                        localStorage.setItem('dev-mode', 'true');
+                        setShowDevPassword(false);
+                        setDevPassword('');
+                        setMessage({ type: 'success', text: 'Dev mode enabled!' });
+                      } else {
+                        setMessage({ type: 'error', text: 'Wrong password' });
+                        setDevPassword('');
+                      }
+                    }
+                  }}
+                  placeholder="Password"
+                  className="flex-1 bg-theme-bg-secondary border border-theme-border rounded-lg px-3 py-2 text-theme-text-primary text-sm focus:border-purple-500 focus:outline-none"
+                  autoFocus
+                />
+                <button
+                  onClick={() => {
+                    if (devPassword === DEV_PASSWORD) {
+                      setDevModeEnabled(true);
+                      localStorage.setItem('dev-mode', 'true');
+                      setShowDevPassword(false);
+                      setDevPassword('');
+                      setMessage({ type: 'success', text: 'Dev mode enabled!' });
+                    } else {
+                      setMessage({ type: 'error', text: 'Wrong password' });
+                      setDevPassword('');
+                    }
+                  }}
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm transition-colors"
+                >
+                  Enter
+                </button>
+              </div>
+              <button
+                onClick={() => {
+                  setShowDevPassword(false);
+                  setDevPassword('');
+                }}
+                className="text-xs text-theme-text-muted hover:text-theme-text-secondary mt-2"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowDevPassword(true)}
+              className="w-full flex items-center gap-3 bg-theme-bg-tertiary hover:bg-theme-bg-primary border border-theme-border text-theme-text-secondary p-4 rounded-xl transition-colors"
+            >
+              <Lock className="w-5 h-5" />
+              <div className="text-left">
+                <div className="font-semibold">Enable Dev Mode</div>
+                <div className="text-sm text-theme-text-muted">Access developer features</div>
+              </div>
+            </button>
+          )}
         </div>
 
         <div className="mt-6 pt-4 border-t border-theme-border text-center">

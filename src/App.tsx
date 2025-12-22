@@ -11,6 +11,8 @@ import { CompleteButton } from './components/CompleteButton';
 import { DataManager } from './components/DataManager';
 import { VoiceButton } from './components/VoiceButton';
 import { WorkoutEditor } from './components/WorkoutEditor';
+import { Stopwatch } from './components/Stopwatch';
+import { DevNotes } from './components/DevNotes';
 import { useDatabase } from './hooks/useDatabase';
 import { useStreak } from './hooks/useStreak';
 import { useTimer } from './hooks/useTimer';
@@ -282,6 +284,10 @@ export default function App() {
           onThemeModeChange={setThemeMode}
           onThemeColorChange={setThemeColor}
         />
+
+      <Stopwatch />
+
+      <DevNotes />
 
       <VoiceButton
         isListening={isListening}
