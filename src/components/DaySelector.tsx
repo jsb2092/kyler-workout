@@ -1,4 +1,4 @@
-import { Calendar, Check } from 'lucide-react';
+import { Calendar, Check, Snowflake } from 'lucide-react';
 import { workoutData, days } from '../data/workouts';
 import type { DayName } from '../types';
 import { getTodayDayName } from '../database';
@@ -6,9 +6,10 @@ import { getTodayDayName } from '../database';
 interface DaySelectorProps {
   onSelectDay: (day: DayName) => void;
   weekCompletions: Set<DayName>;
+  weekFrozen: Set<DayName>;
 }
 
-export function DaySelector({ onSelectDay, weekCompletions }: DaySelectorProps) {
+export function DaySelector({ onSelectDay, weekCompletions, weekFrozen }: DaySelectorProps) {
   const today = getTodayDayName();
 
   return (
@@ -20,6 +21,7 @@ export function DaySelector({ onSelectDay, weekCompletions }: DaySelectorProps) 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {days.map((day) => {
           const isCompleted = weekCompletions.has(day);
+          const isFrozen = weekFrozen.has(day);
           const isToday = day === today;
 
           return (
@@ -41,6 +43,11 @@ export function DaySelector({ onSelectDay, weekCompletions }: DaySelectorProps) 
                 {isCompleted && (
                   <div className="bg-green-500 rounded-full p-2">
                     <Check className="w-5 h-5 text-white" />
+                  </div>
+                )}
+                {isFrozen && !isCompleted && (
+                  <div className="bg-cyan-500 rounded-full p-2">
+                    <Snowflake className="w-5 h-5 text-white" />
                   </div>
                 )}
               </div>

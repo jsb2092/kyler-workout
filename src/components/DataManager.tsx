@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Download, Upload, Trash2, Settings, X, Volume2, User, Sun, Moon, Palette, Search } from 'lucide-react';
-import { exportData, importData, clearAllData } from '../database';
+import { Download, Upload, Trash2, Settings, X, Volume2, User, Sun, Moon, Palette, Search, Bug, Coins, Calendar } from 'lucide-react';
+import { exportData, importData, clearAllData, setDevDateOverride, getDevDateOverride, addPoints, clearCompletionsAndUserData } from '../database';
 import { ASSISTANT_NAMES } from '../hooks/useVoiceAssistant';
 import { THEME_COLORS, COLOR_HEX, type ThemeMode, type ThemeColor } from '../hooks/useTheme';
 
@@ -33,6 +33,17 @@ export function DataManager({
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [voiceSearch, setVoiceSearch] = useState('');
   const [showVoiceDropdown, setShowVoiceDropdown] = useState(false);
+  const [devDate, setDevDate] = useState<string>(() => {
+    const override = getDevDateOverride();
+    if (override) {
+      // Use local date format to match the input
+      const year = override.getFullYear();
+      const month = String(override.getMonth() + 1).padStart(2, '0');
+      const day = String(override.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+    return '';
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const voiceDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -413,6 +424,89 @@ export function DataManager({
             </button>
           </div>
         </div>
+
+        {/* Dev Tools - Only visible in development */}
+        {import.meta.env.DEV && (
+          <div className="mt-6 pt-4 border-t border-theme-border">
+            <div className="flex items-center gap-2 mb-3">
+              <Bug className="w-4 h-4 text-red-400" />
+              <h4 className="text-sm font-semibold text-red-400">Dev Tools</h4>
+            </div>
+
+            {/* Date Override */}
+            <div className="mb-4">
+              <label className="text-sm text-theme-text-secondary block mb-2 flex items-center gap-1">
+                <Calendar className="w-3 h-3" />
+                Override Current Date
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="date"
+                  value={devDate}
+                  onChange={(e) => {
+                    setDevDate(e.target.value);
+                    if (e.target.value) {
+                      setDevDateOverride(new Date(e.target.value + 'T12:00:00'));
+                    } else {
+                      setDevDateOverride(null);
+                    }
+                    onDataChange();
+                  }}
+                  className="flex-1 bg-theme-bg-tertiary border border-theme-border rounded-lg px-3 py-2 text-theme-text-primary text-sm focus:border-red-500 focus:outline-none"
+                />
+                <button
+                  onClick={() => {
+                    setDevDate('');
+                    setDevDateOverride(null);
+                    onDataChange();
+                  }}
+                  className="px-3 py-2 bg-theme-bg-tertiary hover:bg-theme-bg-primary border border-theme-border rounded-lg text-theme-text-secondary text-sm"
+                >
+                  Reset
+                </button>
+              </div>
+              {devDate && (
+                <p className="text-xs text-red-400 mt-1">
+                  Date override active: {new Date(devDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                </p>
+              )}
+            </div>
+
+            {/* Add Points Button */}
+            <button
+              onClick={async () => {
+                await addPoints(1000);
+                onDataChange();
+                setMessage({ type: 'success', text: 'Added 1000 points!' });
+              }}
+              className="w-full flex items-center gap-3 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/30 text-yellow-400 p-4 rounded-xl transition-colors mb-3"
+            >
+              <Coins className="w-5 h-5" />
+              <div className="text-left">
+                <div className="font-semibold">Add 1000 Points</div>
+                <div className="text-sm text-theme-text-muted">For testing the shop</div>
+              </div>
+            </button>
+
+            {/* Reset Streak Data Button */}
+            <button
+              onClick={async () => {
+                await clearCompletionsAndUserData();
+                setDevDate('');
+                setDevDateOverride(null);
+                onDataChange();
+                setMessage({ type: 'success', text: 'Cleared completions, points, and freezes!' });
+              }}
+              className="w-full flex items-center gap-3 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-400 p-4 rounded-xl transition-colors"
+            >
+              <Trash2 className="w-5 h-5" />
+              <div className="text-left">
+                <div className="font-semibold">Reset Streak Data</div>
+                <div className="text-sm text-theme-text-muted">Clear completions, points & freezes</div>
+              </div>
+            </button>
+          </div>
+        )}
 
         <div className="mt-6 pt-4 border-t border-theme-border text-center">
           <p className="text-xs text-theme-text-muted">Version {__APP_VERSION__}</p>

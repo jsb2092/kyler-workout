@@ -1,5 +1,5 @@
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
-import type { DayName, WorkoutCompletion, DifficultyPreference, DifficultyLevel, CustomGoals, CustomWorkout } from '../types';
+import type { DayName, WorkoutCompletion, DifficultyPreference, DifficultyLevel, CustomGoals, CustomWorkout, UserData } from '../types';
 
 interface WorkoutDB extends DBSchema {
   completions: {
@@ -29,10 +29,14 @@ interface WorkoutDB extends DBSchema {
       'by-day': DayName;
     };
   };
+  userData: {
+    key: number;
+    value: UserData;
+  };
 }
 
 const DB_NAME = 'kyler-workout-db';
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 
 let dbPromise: Promise<IDBPDatabase<WorkoutDB>> | null = null;
 
@@ -67,29 +71,48 @@ export async function initDatabase(): Promise<IDBPDatabase<WorkoutDB>> {
           });
           workoutStore.createIndex('by-day', 'dayName');
         }
+        if (oldVersion < 5) {
+          db.createObjectStore('userData', {
+            keyPath: 'id',
+            autoIncrement: true,
+          });
+        }
       },
     });
   }
   return dbPromise;
 }
 
-export async function markDayComplete(dayName: DayName, isRestDay: boolean): Promise<void> {
-  const db = await initDatabase();
-  // Use the expected date for this day (e.g., marking Friday on Saturday uses Friday's date)
-  const expectedDate = getMostRecentDateForDay(dayName);
+export async function markDayComplete(dayName: DayName, isRestDay: boolean): Promise<{ success: boolean; error?: string }> {
+  // Only allow completing today's workout
+  const today = getTodayDayName();
+  if (dayName !== today) {
+    return { success: false, error: `You can only complete ${today}'s workout today.` };
+  }
 
-  // Check if already completed for this week's occurrence
-  const existing = await db.getAllFromIndex('completions', 'by-date', expectedDate);
+  const db = await initDatabase();
+  const todayDate = getLocalDateString(getCurrentDate());
+
+  // Check if already completed today
+  const existing = await db.getAllFromIndex('completions', 'by-date', todayDate);
   const alreadyCompleted = existing.some(c => c.dayName === dayName);
 
-  if (!alreadyCompleted) {
-    await db.add('completions', {
-      dayName,
-      completedDate: expectedDate,
-      isRestDay,
-      createdAt: new Date().toISOString(),
-    });
+  if (alreadyCompleted) {
+    return { success: false, error: 'Already completed today!' };
   }
+
+  // Add completion
+  await db.add('completions', {
+    dayName,
+    completedDate: todayDate,
+    isRestDay,
+    createdAt: new Date().toISOString(),
+  });
+
+  // Award 10 points for completing a workout
+  await addPoints(10);
+
+  return { success: true };
 }
 
 export async function getCompletionHistory(limit: number = 30): Promise<WorkoutCompletion[]> {
@@ -110,15 +133,64 @@ export async function wasCompletedToday(dayName: DayName): Promise<boolean> {
 // JS day mapping: 0=Sun, 1=Mon, ..., 6=Sat
 const JS_DAY_NAMES: DayName[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
+// Dev mode date override (only works in development)
+// Persisted to localStorage so it survives refresh
+let devDateOverride: Date | null = null;
+
+// Initialize from localStorage on module load
+if (import.meta.env.DEV) {
+  const stored = localStorage.getItem('dev-date-override');
+  if (stored) {
+    devDateOverride = new Date(stored);
+  }
+}
+
+export function setDevDateOverride(date: Date | null): void {
+  if (import.meta.env.DEV) {
+    devDateOverride = date;
+    if (date) {
+      localStorage.setItem('dev-date-override', date.toISOString());
+    } else {
+      localStorage.removeItem('dev-date-override');
+    }
+  }
+}
+
+export function getDevDateOverride(): Date | null {
+  return import.meta.env.DEV ? devDateOverride : null;
+}
+
+// Get the current date (respects dev override)
+function getCurrentDate(): Date {
+  if (import.meta.env.DEV && devDateOverride) {
+    return new Date(devDateOverride);
+  }
+  return new Date();
+}
+
+// Get local date string in YYYY-MM-DD format (not UTC)
+function getLocalDateString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+// Parse a YYYY-MM-DD string as local date (not UTC)
+function parseLocalDateString(dateStr: string): Date {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year!, month! - 1, day!);
+}
+
 // Get today's day name
 export function getTodayDayName(): DayName {
-  return JS_DAY_NAMES[new Date().getDay()]!;
+  return JS_DAY_NAMES[getCurrentDate().getDay()]!;
 }
 
 // Get the most recent date for a given day of the week
 // If that day is today, returns today. Otherwise returns the most recent past occurrence.
 export function getMostRecentDateForDay(dayName: DayName): string {
-  const today = new Date();
+  const today = getCurrentDate();
   const todayDayIndex = today.getDay();
   const targetDayIndex = JS_DAY_NAMES.indexOf(dayName);
 
@@ -130,62 +202,163 @@ export function getMostRecentDateForDay(dayName: DayName): string {
   const targetDate = new Date(today);
   targetDate.setDate(today.getDate() - daysAgo);
 
-  return targetDate.toISOString().split('T')[0]!;
+  return getLocalDateString(targetDate);
 }
 
-// Get all days completed in the current week cycle
-// When all 7 days are complete, resets to empty so user can start a new week
-export async function getWeekCompletions(): Promise<Set<DayName>> {
+// Get all days completed or frozen in the current week cycle
+// Returns both completed days and frozen days separately
+export async function getWeekStatus(): Promise<{ completed: Set<DayName>; frozen: Set<DayName> }> {
   const db = await initDatabase();
   const all = await db.getAll('completions');
+  const userData = await getUserData();
   const completed = new Set<DayName>();
+  const frozen = new Set<DayName>();
 
-  // Build a map of each day's most recent expected date and whether it was completed
+  // Build a map of each day's most recent expected date
   const weekDates: Record<string, string> = {};
   for (const dayName of JS_DAY_NAMES) {
     weekDates[dayName] = getMostRecentDateForDay(dayName);
   }
 
+  // Create a set of frozen dates for fast lookup
+  const frozenDates = new Set(userData.freezesUsed);
+
   for (const dayName of JS_DAY_NAMES) {
-    const expectedDate = weekDates[dayName];
+    const expectedDate = weekDates[dayName]!;
     const wasCompleted = all.some(c => c.dayName === dayName && c.completedDate === expectedDate);
+    const wasFrozen = frozenDates.has(expectedDate);
+
     if (wasCompleted) {
       completed.add(dayName);
+    } else if (wasFrozen) {
+      frozen.add(dayName);
     }
   }
 
-  // If all 7 days are complete, reset for a new week cycle
-  if (completed.size === 7) {
-    return new Set<DayName>();
+  // If all 7 days are complete/frozen, reset for a new week cycle
+  if (completed.size + frozen.size === 7) {
+    return { completed: new Set<DayName>(), frozen: new Set<DayName>() };
   }
 
+  return { completed, frozen };
+}
+
+// Legacy function for backwards compatibility
+export async function getWeekCompletions(): Promise<Set<DayName>> {
+  const { completed } = await getWeekStatus();
   return completed;
 }
 
 export async function calculateStreak(): Promise<number> {
   const db = await initDatabase();
   const all = await db.getAll('completions');
+  const userData = await getUserData();
 
   if (all.length === 0) return 0;
 
   // Create a set of all completion dates for fast lookup
   const completedDates = new Set(all.map(c => c.completedDate));
+  const freezesUsed = new Set(userData.freezesUsed);
 
   // Start from today and count backwards through consecutive days
   let streak = 0;
-  const date = new Date();
+  const date = getCurrentDate();
+  const todayStr = getLocalDateString(date);
+
+  // If today isn't completed yet, start counting from yesterday
+  // (user might still complete today, so don't break streak yet)
+  if (!completedDates.has(todayStr) && !freezesUsed.has(todayStr)) {
+    date.setDate(date.getDate() - 1);
+  }
 
   while (true) {
-    const dateStr = date.toISOString().split('T')[0]!;
+    const dateStr = getLocalDateString(date);
+
     if (completedDates.has(dateStr)) {
+      // Day was completed - add to streak
       streak++;
-      date.setDate(date.getDate() - 1); // Go back one day
+      date.setDate(date.getDate() - 1);
+    } else if (freezesUsed.has(dateStr)) {
+      // Freeze was used - maintains streak but doesn't add to it
+      // Just continue to the previous day without incrementing
+      date.setDate(date.getDate() - 1);
     } else {
+      // No completion and no freeze - streak broken
       break;
     }
   }
 
   return streak;
+}
+
+// Check for missed days and use freezes automatically
+export async function checkAndUseFreezes(): Promise<{ freezeUsed: boolean; streakLost: boolean }> {
+  const db = await initDatabase();
+  const all = await db.getAll('completions');
+  const userData = await getUserData();
+
+  if (all.length === 0) {
+    return { freezeUsed: false, streakLost: false };
+  }
+
+  // Find the most recent completion date
+  const completedDates = all.map(c => c.completedDate).sort((a, b) => b.localeCompare(a));
+  const lastCompletionDate = completedDates[0];
+  if (!lastCompletionDate) {
+    return { freezeUsed: false, streakLost: false };
+  }
+
+  // Parse as local date (not UTC) to avoid timezone issues
+  const lastDate = parseLocalDateString(lastCompletionDate);
+  const todayDate = getCurrentDate();
+
+  // Normalize both dates to start of day for accurate comparison
+  lastDate.setHours(0, 0, 0, 0);
+  todayDate.setHours(0, 0, 0, 0);
+
+  // Calculate days between last completion and today
+  const daysDiff = Math.floor((todayDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+
+  // If more than 1 day has passed, we have missed days
+  if (daysDiff <= 1) {
+    return { freezeUsed: false, streakLost: false };
+  }
+
+  // Don't try to use freezes if too many days have passed (streak is definitely broken)
+  // Only attempt to save streaks for gaps of up to 3 days
+  if (daysDiff > 4) {
+    return { freezeUsed: false, streakLost: true };
+  }
+
+  // Check each missed day (excluding today, as user might complete it)
+  const freezesUsed = new Set(userData.freezesUsed);
+  let freezeUsed = false;
+  let streakLost = false;
+
+  for (let i = 1; i < daysDiff; i++) {
+    const missedDate = new Date(lastDate);
+    missedDate.setDate(missedDate.getDate() + i);
+    const missedDateStr = getLocalDateString(missedDate);
+
+    // Check if we already used a freeze or completed this day
+    const completedThisDay = all.some(c => c.completedDate === missedDateStr);
+    const alreadyFroze = freezesUsed.has(missedDateStr);
+
+    if (!completedThisDay && !alreadyFroze) {
+      // Try to use a freeze
+      const used = await useStreakFreeze(missedDateStr);
+      if (used) {
+        freezeUsed = true;
+        freezesUsed.add(missedDateStr);
+      } else {
+        // No freeze available - streak is lost
+        streakLost = true;
+        break;
+      }
+    }
+  }
+
+  return { freezeUsed, streakLost };
 }
 
 export async function getLastWorkoutDate(): Promise<string | null> {
@@ -281,6 +454,14 @@ export async function clearAllData(): Promise<void> {
   await db.clear('difficultyPreferences');
   await db.clear('customGoals');
   await db.clear('customWorkouts');
+  await db.clear('userData');
+}
+
+// Clear just completions and user data (for testing)
+export async function clearCompletionsAndUserData(): Promise<void> {
+  const db = await initDatabase();
+  await db.clear('completions');
+  await db.clear('userData');
 }
 
 // Get day-level difficulty preference
@@ -441,4 +622,91 @@ export async function resetAllCustomizations(): Promise<void> {
   const db = await initDatabase();
   await db.clear('customGoals');
   await db.clear('customWorkouts');
+}
+
+// ==================== Points & Streak Freezes ====================
+
+const FREEZE_COST = 50;
+
+export async function getUserData(): Promise<UserData> {
+  const db = await initDatabase();
+  const all = await db.getAll('userData');
+  if (all.length === 0) {
+    // Initialize default user data
+    const defaultData: UserData = {
+      points: 0,
+      streakFreezes: 0,
+      freezesUsed: [],
+      updatedAt: new Date().toISOString(),
+    };
+    const id = await db.add('userData', defaultData);
+    return { ...defaultData, id };
+  }
+  return all[0]!;
+}
+
+export async function addPoints(amount: number): Promise<void> {
+  const db = await initDatabase();
+  const userData = await getUserData();
+
+  await db.put('userData', {
+    ...userData,
+    points: userData.points + amount,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+export async function getPoints(): Promise<number> {
+  const userData = await getUserData();
+  return userData.points;
+}
+
+export async function getStreakFreezes(): Promise<number> {
+  const userData = await getUserData();
+  return userData.streakFreezes;
+}
+
+export async function buyStreakFreeze(): Promise<boolean> {
+  const userData = await getUserData();
+
+  if (userData.points < FREEZE_COST) {
+    return false; // Not enough points
+  }
+
+  const db = await initDatabase();
+  await db.put('userData', {
+    ...userData,
+    points: userData.points - FREEZE_COST,
+    streakFreezes: userData.streakFreezes + 1,
+    updatedAt: new Date().toISOString(),
+  });
+
+  return true;
+}
+
+export async function useStreakFreeze(dateStr: string): Promise<boolean> {
+  const userData = await getUserData();
+
+  if (userData.streakFreezes <= 0) {
+    return false; // No freezes available
+  }
+
+  // Check if already used a freeze for this date
+  if (userData.freezesUsed.includes(dateStr)) {
+    return true; // Already used, consider it a success
+  }
+
+  const db = await initDatabase();
+  await db.put('userData', {
+    ...userData,
+    streakFreezes: userData.streakFreezes - 1,
+    freezesUsed: [...userData.freezesUsed, dateStr],
+    updatedAt: new Date().toISOString(),
+  });
+
+  return true;
+}
+
+export function getFreezeCost(): number {
+  return FREEZE_COST;
 }

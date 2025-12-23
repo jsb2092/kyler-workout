@@ -12,6 +12,7 @@ import { DataManager } from './components/DataManager';
 import { VoiceButton } from './components/VoiceButton';
 import { WorkoutEditor } from './components/WorkoutEditor';
 import { Stopwatch } from './components/Stopwatch';
+import { Shop } from './components/Shop';
 import { useDatabase } from './hooks/useDatabase';
 import { useStreak } from './hooks/useStreak';
 import { useTimer } from './hooks/useTimer';
@@ -29,6 +30,7 @@ export default function App() {
   const [showGoalsEditor, setShowGoalsEditor] = useState(false);
   const [showWorkoutEditor, setShowWorkoutEditor] = useState(false);
   const [showStopwatch, setShowStopwatch] = useState(false);
+  const [showShop, setShowShop] = useState(false);
   const [banTimeLeft, setBanTimeLeft] = useState<number>(0);
   const [assistantName, setAssistantName] = useState<string>(() => {
     return localStorage.getItem('assistant-name') || 'Rocky';
@@ -73,7 +75,21 @@ export default function App() {
   };
 
   const { isReady } = useDatabase();
-  const { streak, showCelebration, completedToday, weekCompletions, completeWorkout, checkCompletedToday, refreshStreak } = useStreak();
+  const {
+    streak,
+    showCelebration,
+    completedToday,
+    weekCompletions,
+    weekFrozen,
+    points,
+    streakFreezes,
+    freezeCost,
+    completionError,
+    completeWorkout,
+    checkCompletedToday,
+    refreshStreak,
+    purchaseFreeze,
+  } = useStreak();
   const {
     goals,
     defaultGoals,
@@ -245,6 +261,9 @@ export default function App() {
         <Header
           streak={streak}
           showCelebration={showCelebration}
+          points={points}
+          streakFreezes={streakFreezes}
+          onOpenShop={() => setShowShop(true)}
         />
 
         {!selectedDay && (
@@ -255,7 +274,7 @@ export default function App() {
         )}
 
         {!selectedDay ? (
-          <DaySelector onSelectDay={handleSelectDay} weekCompletions={weekCompletions} />
+          <DaySelector onSelectDay={handleSelectDay} weekCompletions={weekCompletions} weekFrozen={weekFrozen} />
         ) : (
           <div>
             <DayHeader
@@ -344,6 +363,24 @@ export default function App() {
           onReset={() => resetDay(selectedDay)}
           onClose={() => setShowWorkoutEditor(false)}
         />
+      )}
+
+      {/* Shop Modal */}
+      {showShop && (
+        <Shop
+          points={points}
+          streakFreezes={streakFreezes}
+          freezeCost={freezeCost}
+          onPurchaseFreeze={purchaseFreeze}
+          onClose={() => setShowShop(false)}
+        />
+      )}
+
+      {/* Completion Error Toast */}
+      {completionError && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-red-500/90 text-white px-6 py-3 rounded-xl shadow-lg animate-bounce">
+          {completionError}
+        </div>
       )}
 
     </div>

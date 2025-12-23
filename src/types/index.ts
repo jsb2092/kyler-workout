@@ -75,3 +75,12 @@ export interface CustomWorkout {
   updatedAt: string;
 }
 
+// Points and streak freeze system
+export interface UserData {
+  id?: number;
+  points: number;
+  streakFreezes: number;
+  freezesUsed: string[]; // dates when freezes were used
+  updatedAt: string;
+}
+
