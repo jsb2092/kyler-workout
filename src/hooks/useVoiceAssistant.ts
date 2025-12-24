@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import type { DayName, Exercise } from '../types';
+import type { DayName, Exercise, ExerciseVariant } from '../types';
 
 // Available assistant names
 export const ASSISTANT_NAMES = ['Rocky', 'Coach', 'Jarvis', 'Max', 'Flex'] as const;
@@ -48,6 +48,7 @@ interface VoiceActions {
   isPaused: boolean;
   completedToday: DayName | null;
   exercises: Exercise[];
+  getEffectiveExercise: (exercise: Exercise) => Exercise | ExerciseVariant;
   selectedVoice: string | null;
   enabled: boolean;
   assistantName: string;
@@ -373,8 +374,10 @@ export function useVoiceAssistant(actions: VoiceActions) {
       }
 
       if (exerciseIndex >= 0 && exerciseIndex < realExercises.length) {
-        const exercise = realExercises[exerciseIndex];
-        if (exercise) {
+        const baseExercise = realExercises[exerciseIndex];
+        if (baseExercise) {
+          // Get the difficulty-adjusted exercise
+          const exercise = actions.getEffectiveExercise(baseExercise);
           const position = getOrdinalSuffix(exerciseIndex + 1);
           const isLast = exerciseIndex === realExercises.length - 1;
 

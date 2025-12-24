@@ -209,6 +209,7 @@ export default function App() {
     isPaused,
     completedToday,
     exercises: currentExercises,
+    getEffectiveExercise,
     selectedVoice,
     enabled: banTimeLeft === 0,
     assistantName,
