@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Download, Upload, Trash2, Settings, X, Volume2, User, Sun, Moon, Palette, Search, Bug, Coins, Calendar, Dumbbell, Heart } from 'lucide-react';
+import { Download, Upload, Trash2, Settings, X, Volume2, User, Sun, Moon, Palette, Search, Bug, Coins, Calendar, Dumbbell, Heart, HelpCircle } from 'lucide-react';
 import { exportData, importData, clearAllData, setDevDateOverride, getDevDateOverride, addPoints, clearCompletionsAndUserData } from '../database';
 import { ASSISTANT_NAMES } from '../hooks/useVoiceAssistant';
 import { THEME_COLORS, COLOR_HEX, type ThemeMode, type ThemeColor } from '../hooks/useTheme';
@@ -17,6 +17,7 @@ interface DataManagerProps {
   onThemeColorChange: (color: ThemeColor) => void;
   workoutMode: WorkoutMode;
   onWorkoutModeChange: (mode: WorkoutMode) => void;
+  onShowTour: () => void;
 }
 
 export function DataManager({
@@ -31,6 +32,7 @@ export function DataManager({
   onThemeColorChange,
   workoutMode,
   onWorkoutModeChange,
+  onShowTour,
 }: DataManagerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -549,6 +551,23 @@ export function DataManager({
             </button>
           </div>
         )}
+
+        {/* Help */}
+        <div className="mt-6 pt-4 border-t border-theme-border">
+          <button
+            onClick={() => {
+              setIsOpen(false);
+              onShowTour();
+            }}
+            className="w-full flex items-center gap-3 bg-theme-accent-500/20 hover:bg-theme-accent-500/30 border border-theme-accent-500/30 text-theme-accent-400 p-4 rounded-xl transition-colors"
+          >
+            <HelpCircle className="w-5 h-5" />
+            <div className="text-left">
+              <div className="font-semibold">View App Tour</div>
+              <div className="text-sm text-theme-text-muted">Learn how to use the app</div>
+            </div>
+          </button>
+        </div>
 
         <div className="mt-6 pt-4 border-t border-theme-border text-center">
           <p className="text-xs text-theme-text-muted">Version {__APP_VERSION__}</p>

@@ -345,6 +345,7 @@ export default function App() {
           onThemeColorChange={setThemeColor}
           workoutMode={workoutMode}
           onWorkoutModeChange={setWorkoutMode}
+          onShowTour={() => setShowTour(true)}
         />
 
       <Stopwatch
