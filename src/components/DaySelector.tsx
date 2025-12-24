@@ -1,15 +1,16 @@
 import { Calendar, Check, Snowflake } from 'lucide-react';
-import { workoutData, days } from '../data/workouts';
-import type { DayName } from '../types';
+import { days } from '../data/workouts';
+import type { DayName, WorkoutData } from '../types';
 import { getTodayDayName } from '../database';
 
 interface DaySelectorProps {
   onSelectDay: (day: DayName) => void;
   weekCompletions: Set<DayName>;
   weekFrozen: Set<DayName>;
+  workouts: WorkoutData;
 }
 
-export function DaySelector({ onSelectDay, weekCompletions, weekFrozen }: DaySelectorProps) {
+export function DaySelector({ onSelectDay, weekCompletions, weekFrozen, workouts }: DaySelectorProps) {
   const today = getTodayDayName();
 
   return (
@@ -28,17 +29,17 @@ export function DaySelector({ onSelectDay, weekCompletions, weekFrozen }: DaySel
             <button
               key={day}
               onClick={() => onSelectDay(day)}
-              className={`${workoutData[day].color} hover:opacity-90 transform hover:scale-105 transition-all p-6 rounded-xl shadow-lg text-left relative`}
+              className={`${workouts[day].color} hover:opacity-90 transform hover:scale-105 transition-all p-6 rounded-xl shadow-lg text-left relative`}
             >
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-xl font-bold mb-1 flex items-center gap-2">
-                    {workoutData[day].name}
+                    {workouts[day].name}
                     {isToday && (
                       <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">Today</span>
                     )}
                   </div>
-                  <div className="text-sm opacity-90">{workoutData[day].title}</div>
+                  <div className="text-sm opacity-90">{workouts[day].title}</div>
                 </div>
                 {isCompleted && (
                   <div className="bg-green-500 rounded-full p-2">

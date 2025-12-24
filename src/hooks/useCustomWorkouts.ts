@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { DayName, Exercise, WorkoutData } from '../types';
-import { workoutData as defaultWorkoutData } from '../data/workouts';
+import { workoutData as standardWorkoutData } from '../data/workouts';
+import { seniorWorkoutData } from '../data/workouts-senior';
 import {
   getCustomGoals,
   saveCustomGoals,
@@ -10,15 +11,20 @@ import {
   resetCustomWorkout,
   resetAllCustomizations,
 } from '../database';
+import type { WorkoutMode } from './useWorkoutMode';
 
-const DEFAULT_GOALS = ['Pull-ups', 'L-Sit', 'Core Strength', 'Push-ups', 'Upper & Lower Body'];
+const STANDARD_GOALS = ['Pull-ups', 'L-Sit', 'Core Strength', 'Push-ups', 'Upper & Lower Body'];
+const SENIOR_GOALS = ['Mobility', 'Balance', 'Flexibility', 'Light Strength', 'Daily Movement'];
 
-export function useCustomWorkouts() {
-  const [goals, setGoals] = useState<string[]>(DEFAULT_GOALS);
+export function useCustomWorkouts(mode: WorkoutMode = 'standard') {
+  const defaultWorkoutData = mode === 'senior' ? seniorWorkoutData : standardWorkoutData;
+  const defaultGoals = mode === 'senior' ? SENIOR_GOALS : STANDARD_GOALS;
+
+  const [goals, setGoals] = useState<string[]>(defaultGoals);
   const [customWorkouts, setCustomWorkouts] = useState<Map<DayName, { title?: string; color?: string; exercises: Exercise[] }>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load custom data on mount
+  // Load custom data on mount and when mode changes
   useEffect(() => {
     async function loadCustomData() {
       try {
@@ -26,6 +32,9 @@ export function useCustomWorkouts() {
         const savedGoals = await getCustomGoals();
         if (savedGoals) {
           setGoals(savedGoals);
+        } else {
+          // Reset to mode-appropriate defaults
+          setGoals(defaultGoals);
         }
 
         // Load custom workouts
@@ -38,7 +47,7 @@ export function useCustomWorkouts() {
       }
     }
     loadCustomData();
-  }, []);
+  }, [mode, defaultGoals]);
 
   // Get merged workout data (custom + defaults)
   const getWorkoutData = useCallback((): WorkoutData => {
@@ -70,8 +79,8 @@ export function useCustomWorkouts() {
   // Reset goals to defaults
   const handleResetGoals = useCallback(async () => {
     await resetCustomGoals();
-    setGoals(DEFAULT_GOALS);
-  }, []);
+    setGoals(defaultGoals);
+  }, [defaultGoals]);
 
   // Save workout for a day
   const handleSaveWorkout = useCallback(async (
@@ -101,13 +110,13 @@ export function useCustomWorkouts() {
   // Reset all customizations
   const handleResetAll = useCallback(async () => {
     await resetAllCustomizations();
-    setGoals(DEFAULT_GOALS);
+    setGoals(defaultGoals);
     setCustomWorkouts(new Map());
-  }, []);
+  }, [defaultGoals]);
 
   return {
     goals,
-    defaultGoals: DEFAULT_GOALS,
+    defaultGoals,
     workouts: getWorkoutData(),
     isLoading,
     isCustomized,

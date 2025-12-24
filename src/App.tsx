@@ -13,6 +13,7 @@ import { VoiceButton } from './components/VoiceButton';
 import { WorkoutEditor } from './components/WorkoutEditor';
 import { Stopwatch } from './components/Stopwatch';
 import { Shop } from './components/Shop';
+import { GuidedTour } from './components/GuidedTour';
 import { useDatabase } from './hooks/useDatabase';
 import { useStreak } from './hooks/useStreak';
 import { useTimer } from './hooks/useTimer';
@@ -22,6 +23,7 @@ import { useWakeLock } from './hooks/useWakeLock';
 import { useCustomWorkouts } from './hooks/useCustomWorkouts';
 import { useTheme } from './hooks/useTheme';
 import { useStopwatch } from './hooks/useStopwatch';
+import { useWorkoutMode } from './hooks/useWorkoutMode';
 import type { DayName } from './types';
 
 export default function App() {
@@ -31,6 +33,10 @@ export default function App() {
   const [showWorkoutEditor, setShowWorkoutEditor] = useState(false);
   const [showStopwatch, setShowStopwatch] = useState(false);
   const [showShop, setShowShop] = useState(false);
+  const [showTour, setShowTour] = useState<boolean>(() => {
+    // Show tour if user hasn't seen it before
+    return !localStorage.getItem('tour-completed');
+  });
   const [banTimeLeft, setBanTimeLeft] = useState<number>(0);
   const [assistantName, setAssistantName] = useState<string>(() => {
     return localStorage.getItem('assistant-name') || 'Rocky';
@@ -75,6 +81,7 @@ export default function App() {
   };
 
   const { isReady } = useDatabase();
+  const { mode: workoutMode, setMode: setWorkoutMode } = useWorkoutMode();
   const {
     streak,
     showCelebration,
@@ -99,7 +106,7 @@ export default function App() {
     resetGoals,
     saveWorkout,
     resetDay,
-  } = useCustomWorkouts();
+  } = useCustomWorkouts(workoutMode);
 
   // Keep screen on while app is active
   useWakeLock();
@@ -165,6 +172,11 @@ export default function App() {
     }
   };
 
+  const handleTourComplete = () => {
+    localStorage.setItem('tour-completed', 'true');
+    setShowTour(false);
+  };
+
   // Voice assistant callbacks
   const handleVoiceStartWarmup = useCallback(() => {
     if (selectedDay) {
@@ -223,6 +235,15 @@ export default function App() {
     );
   }
 
+  // Guided tour for first-time users
+  if (showTour) {
+    return (
+      <div className="min-h-screen bg-theme-bg-primary">
+        <GuidedTour onComplete={handleTourComplete} />
+      </div>
+    );
+  }
+
   // Assistant ban screen
   if (banTimeLeft > 0) {
     return (
@@ -275,7 +296,7 @@ export default function App() {
         )}
 
         {!selectedDay ? (
-          <DaySelector onSelectDay={handleSelectDay} weekCompletions={weekCompletions} weekFrozen={weekFrozen} />
+          <DaySelector onSelectDay={handleSelectDay} weekCompletions={weekCompletions} weekFrozen={weekFrozen} workouts={workouts} />
         ) : (
           <div>
             <DayHeader
@@ -322,6 +343,8 @@ export default function App() {
           themeColor={themeColor}
           onThemeModeChange={setThemeMode}
           onThemeColorChange={setThemeColor}
+          workoutMode={workoutMode}
+          onWorkoutModeChange={setWorkoutMode}
         />
 
       <Stopwatch

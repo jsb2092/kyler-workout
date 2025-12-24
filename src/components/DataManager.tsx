@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
-import { Download, Upload, Trash2, Settings, X, Volume2, User, Sun, Moon, Palette, Search, Bug, Coins, Calendar } from 'lucide-react';
+import { Download, Upload, Trash2, Settings, X, Volume2, User, Sun, Moon, Palette, Search, Bug, Coins, Calendar, Dumbbell, Heart } from 'lucide-react';
 import { exportData, importData, clearAllData, setDevDateOverride, getDevDateOverride, addPoints, clearCompletionsAndUserData } from '../database';
 import { ASSISTANT_NAMES } from '../hooks/useVoiceAssistant';
 import { THEME_COLORS, COLOR_HEX, type ThemeMode, type ThemeColor } from '../hooks/useTheme';
+import type { WorkoutMode } from '../hooks/useWorkoutMode';
 
 interface DataManagerProps {
   onDataChange: () => void;
@@ -14,6 +15,8 @@ interface DataManagerProps {
   themeColor: ThemeColor;
   onThemeModeChange: (mode: ThemeMode) => void;
   onThemeColorChange: (color: ThemeColor) => void;
+  workoutMode: WorkoutMode;
+  onWorkoutModeChange: (mode: WorkoutMode) => void;
 }
 
 export function DataManager({
@@ -26,6 +29,8 @@ export function DataManager({
   themeColor,
   onThemeModeChange,
   onThemeColorChange,
+  workoutMode,
+  onWorkoutModeChange,
 }: DataManagerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -273,6 +278,43 @@ export function DataManager({
               ))}
             </div>
           </div>
+        </div>
+
+        {/* Workout Mode */}
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Heart className="w-4 h-4 text-theme-accent-400" />
+            <h4 className="text-sm font-semibold text-theme-text-secondary">Workout Mode</h4>
+          </div>
+          <div className="flex bg-theme-bg-tertiary rounded-lg p-1">
+            <button
+              onClick={() => onWorkoutModeChange('standard')}
+              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-sm transition-colors ${
+                workoutMode === 'standard'
+                  ? 'bg-theme-accent-500 text-white'
+                  : 'text-theme-text-muted hover:text-theme-text-primary'
+              }`}
+            >
+              <Dumbbell className="w-4 h-4" />
+              Standard
+            </button>
+            <button
+              onClick={() => onWorkoutModeChange('senior')}
+              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-sm transition-colors ${
+                workoutMode === 'senior'
+                  ? 'bg-theme-accent-500 text-white'
+                  : 'text-theme-text-muted hover:text-theme-text-primary'
+              }`}
+            >
+              <Heart className="w-4 h-4" />
+              Senior
+            </button>
+          </div>
+          <p className="text-xs text-theme-text-muted mt-2">
+            {workoutMode === 'senior'
+              ? 'Gentle exercises focused on mobility, balance & flexibility'
+              : 'Full workout program with strength training'}
+          </p>
         </div>
 
         {/* Data Management */}
