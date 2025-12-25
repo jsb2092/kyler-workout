@@ -26,7 +26,12 @@
       "Bash(gh workflow:*)",
       "Bash(gh api:*)",
       "Bash(npx gh-pages -d dist)",
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Bash(npx cap ls)",
+      "Bash(npx @capacitor/cli:*)",
+      "Bash(npm exec:*)",
+      "Bash(./node_modules/.bin/cap:*)",
+      "Bash(npx cap:*)"
     ]
   }
 }
